@@ -2,7 +2,7 @@
 GraphQL-Tools-Subscribe
 =======================
 
-[HERE BE DRAGONS -- STILL WORK IN PROGRESS]
+[HERE BE DRAGONS -- EARLY ADOPTERS ONLY]
 
 Subscription Framework for GraphQL-Tools
 
