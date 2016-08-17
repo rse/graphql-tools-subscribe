@@ -4,15 +4,16 @@ import * as GraphQL          from "graphql"
 import * as GraphQLTools     from "graphql-tools"
 import GraphQLToolsSubscribe from "./graphql-tools-subscribe.js"
 
+/*  create a new GraphQL-Tools-Subscribe context  */
 var gts = new GraphQLToolsSubscribe()
 
-class gtsHandler {
+/*  configure an in-core handler (actually the default one)  */
+gts.setHandler(class subscriptionHandler {
     constructor (gs) {
         this.gs    = gs
         this.store = {}
     }
     onSubscribe (cid, sid) {
-        // console.log(`handler: subscribe cid=${cid} sid=${sid}`)
         if (!this.store[sid])
             this.store[sid] = {}
         this.store[sid].cid = cid
@@ -22,37 +23,30 @@ class gtsHandler {
             .filter((sid) => this.store[sid].cid === cid)
         if (outdated)
             sids = sids.filter((sid) => this.store[sid].outdated)
-        // console.log(`handler: subscription cid=${cid} outdated=${outdated}: ${sids.join(", ")}`)
         return sids
     }
     onUnsubscribe (cid, sid) {
-        // console.log(`unsubscribe cid=${cid} sid=${sid}`)
         if (this.store[sid])
             delete this.store[sid]
     }
     onScope (sid, scope) {
-        // console.log(`handler: scope sid=${sid} scope=${JSON.stringify(scope)}`)
         if (this.gs.scopeHasWriteOp(scope)) {
             Object.keys(this.store).forEach((other) => {
-                if (other !== sid && this.store[other].scope) {
-                    if (this.gs.scopeInvalidated(scope, this.store[other].scope)) {
-                        // console.log(`handler: outdate scope: sid=${other}`)
+                if (other !== sid && this.store[other].scope)
+                    if (this.gs.scopeInvalidated(scope, this.store[other].scope))
                         this.store[other].outdated = true
-                    }
-                }
             })
         }
         if (this.gs.scopeHasReadOp(scope)) {
-            // console.log(`handler: store scope: sid=${sid}`)
             if (!this.store[sid])
                 this.store[sid] = {}
             this.store[sid].scope   = scope
             this.store[sid].outdated = false
         }
     }
-}
-gts.setHandler(gtsHandler)
+})
 
+/*  define a GraphQL schema  */
 let definition = `
     schema {
         query:    RootQuery
@@ -84,6 +78,8 @@ let definition = `
         title: String
     }
 `
+
+/*  define GraphQL resolvers  */
 let resolvers = {
     RootQuery: {
         subscribe:     gts.makeResolverSubscribeFunction(),
@@ -168,7 +164,10 @@ let resolvers = {
         }
     }
 }
+
+/*  create a GraphQL resolver context  */
 let ctx = {
+    gts,
     shoppingCards: [
         { id: "sc1", items: [ "i11", "i12" ] },
         { id: "sc2", items: [ "i21", "i22" ] }
@@ -180,24 +179,29 @@ let ctx = {
         { id: "i22", title: "Item 2.2" }
     ]
 }
+
+/*  build the GraphQL resolver object  */
 let schema = GraphQLTools.makeExecutableSchema({
     typeDefs: [ definition ],
     resolvers: resolvers
 })
-ctx.gts = gts
+
+/*  helper function for performing GraphQL queries  */
 const makeQuery = (query, variables) => {
-    console.log("--------------------")
-    console.log("QUERY: " + query)
+    console.log("----------------------------------------------------------------------")
+    console.log("QUERY:\n" + query.replace(/^\s+/, "").replace(/\s+$/, ""))
     ctx.gts.setQuery(query)
     ctx.gts.scopeBegin()
     return GraphQL.graphql(schema, query, null, ctx, variables).then((result) => {
-        ctx.gts.scopeEnd()
+        ctx.gts.scopeCommit()
         console.log("RESULT: OK\n" + require("util").inspect(result, { depth: null }))
     }).catch((result) => {
-        console.log("RESULT: ERROR: " + result)
+        ctx.gts.scopeReject()
+        console.log("RESULT: ERROR:\n" + result)
     })
 }
 
+/*  finally perform some GraphQL queries  */
 co(function * () {
 yield (makeQuery(`
     query {
