@@ -20,9 +20,10 @@ Tools](https://github.com/apollostack/graphql-tools) or plain
 [GraphQL.js](https://github.com/graphql/graphql-js) which allows
 GraphQL clients to subscribe on their query and find out whether their
 previously subscribed queries should be refetched. The framework is
-designed to allow an arbitrary subscription persistence and let GraphQL
-servers to actively publish the subscription ids of invalidated queries
-(usually by means of a parallel WebSocket connection).
+designed to allow an arbitrary subscription persistence handling and
+this way let GraphQL servers to perform additional tasks like publishing
+the subscription ids of outdated queries (usually by means of a parallel
+WebSocket connection).
 
 Installation
 ------------
