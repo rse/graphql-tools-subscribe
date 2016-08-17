@@ -59,7 +59,7 @@ class GraphQLToolsSubscribeHandlerInCore {
         /*  outdate existing scopes (in case of any write operations)  */
         if (this.gs.scopeHasWriteOp(scope)) {
             Object.keys(this.store).forEach((other) => {
-                if (other !== sid)
+                if (other !== sid && this.store[other].scope)
                     if (this.gs.scopeInvalidated(scope, this.store[other].scope))
                         this.store[other].outdate = true
             })
@@ -126,9 +126,16 @@ export default class GraphQLToolsSubscribe {
         return this
     }
 
-    /*  end scope  */
-    scopeEnd () {
+    /*  end scope (successfully)  */
+    scopeCommit () {
         this.handler.onScope(this.sid, this.scope)
+        this.scope = {}
+        return this
+    }
+
+    /*  end scope (unsuccessfully)  */
+    scopeReject () {
+        this.scope = {}
         return this
     }
 
