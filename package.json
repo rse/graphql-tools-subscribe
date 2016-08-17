@@ -1,0 +1,38 @@
+{
+    "name":        "graphql-tools-subscribe",
+    "version":     "0.9.0",
+    "description": "Subscription Framework for GraphQL-Tools",
+    "keywords":    [ "graphql", "graphql-tools", "subscribe" ],
+    "main":        "graphql-tools-subscribe.js5",
+    "repository": {
+        "type": "git",
+        "url":  "https://github.com/rse/graphql-tools-subscribe.git"
+    },
+    "author": {
+        "name":  "Ralf S. Engelschall",
+        "email": "rse@engelschall.com",
+        "url":   "http://engelschall.com"
+    },
+    "licenses": [{
+        "type": "MIT",
+        "url":  "http://opensource.org/licenses/MIT"
+    }],
+    "homepage": "https://github.com/rse/graphql-tools-subscribe",
+    "bugs":     "https://github.com/rse/graphql-tools-subscribe/issues",
+    "dependencies": {
+        "pure-uuid":            "~1.4.0",
+        "capitalize":           "~1.0.0"
+    },
+    "devDependencies": {
+        "co":                   "~4.6.0",
+        "graphql":              "~0.6.2",
+        "graphql-tools":        "~0.6.4",
+        "jshint":               "~2.9.2",
+        "babel-cli":            "~6.11.4",
+        "babel-preset-es2015":  "~6.13.2"
+    },
+    "scripts": {
+        "test": "jshint --config jshint.json graphql-tools-subscribe.js && babel-node --presets es2015 test.js",
+        "prepublish": "jshint --config jshint.json graphql-tools-subscribe.js && babel --presets es2015 graphql-tools-subscribe.js >graphql-tools-subscribe.js5"
+    }
+}
