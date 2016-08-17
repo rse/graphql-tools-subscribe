@@ -109,10 +109,10 @@ export default class GraphQLToolsSubscribe {
     scopeAdd (oid, type, action, via, onto) {
         let op = `${action}:${via}:${onto}`
         let regexp = new RegExp("(?:" +
-                  "read:direct:(?:one|some|all)" +
-            "|" + "read:relation:(?:some|all)" +
+                  "read:direct:(?:one|many|all)" +
+            "|" + "read:relation:(?:many|all)" +
             "|" + "create:direct:one" +
-            "|" + "update:direct:(?:one|some)" +
+            "|" + "update:direct:(?:one|many)" +
             "|" + "delete:direct:one" +
         ")")
         if (!regexp.test(op))
@@ -141,7 +141,7 @@ export default class GraphQLToolsSubscribe {
 
     /*  parse the operation string  */
     __opParse (op) {
-        let m = op.match(/^(read|create|update|delete):(direct|relation):(one|some|all)$/)
+        let m = op.match(/^(read|create|update|delete):(direct|relation):(one|many|all)$/)
         if (m === null)
             throw new Error(`internal error: invalid operation "${op}"`)
         return { action: m[1], via: m[2], onto: m[3] }
@@ -212,10 +212,10 @@ export default class GraphQLToolsSubscribe {
 
                         ACTION  VIA      ONTO
                         ------- -------- ------------
-            old Scope:  read    direct   one|some|all
-            old Scope   read    relation some|all
+            old Scope:  read    direct   one|many|all
+            old Scope   read    relation many|all
             new Scope:  create  direct   one
-            new Scope:  update  direct   one|some
+            new Scope:  update  direct   one|many
             new Scope:  delete  direct   one           */
 
         /*  for each new scope which writes...  */
@@ -245,17 +245,17 @@ export default class GraphQLToolsSubscribe {
                                 let oldOp = oldScopeOpDetail
                                 if (   newOp.action === "create"
                                     && oldOp.via === "direct"
-                                    && (oldOp.onto === "some" || oldOp.onto === "all"))
+                                    && (oldOp.onto === "many" || oldOp.onto === "all"))
                                     return true
                                 else if (   newOp.action === "update"
-                                         && newOp.onto === "some"
+                                         && newOp.onto === "many"
                                          && oldOp.via === "direct"
-                                         && (oldOp.onto === "some" || oldOp.onto === "all"))
+                                         && (oldOp.onto === "many" || oldOp.onto === "all"))
                                     return true
 
                                 else if (   newOp.action === "delete"
                                          && oldOp.via === "direct"
-                                         && (oldOp.onto === "some" || oldOp.onto === "all"))
+                                         && (oldOp.onto === "many" || oldOp.onto === "all"))
                                     return true
                             }
                         }
