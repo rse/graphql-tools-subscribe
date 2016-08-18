@@ -189,14 +189,11 @@ export default class GraphQLToolsSubscribe {
         let oldScopeTypes = Object.keys(oldScope)
         for (let i = 0; i < oldScopeTypes.length; i++) {
             let oldScopeType = oldScopeTypes[i]
-
             let oldScopeOps = Object.keys(oldScope[oldScopeType])
             for (let j = 0; j < oldScopeOps.length; j++) {
                 let oldScopeOp = oldScopeOps[j]
-
                 let oldScopeOpDetail = this.__opParse(oldScopeOp)
                 if (oldScopeOpDetail.action === "read") {
-
                     let oldScopeOIDs = oldScope[oldScopeType][oldScopeOp]
                     for (let k = 0; k < oldScopeOIDs.length; k++) {
                         let oid = oldScopeOIDs[k]
@@ -222,24 +219,18 @@ export default class GraphQLToolsSubscribe {
         let newScopeTypes = Object.keys(newScope)
         for (let i = 0; i < newScopeTypes.length; i++) {
             let newScopeType = newScopeTypes[i]
-
             let newScopeOps = Object.keys(newScope[newScopeType])
             for (let j = 0; j < newScopeOps.length; j++) {
                 let newScopeOp = newScopeOps[j]
-
                 let newScopeOpDetail = this.__opParse(newScopeOp)
                 if (newScopeOpDetail.action.match(/^(?:create|update|delete)$/)) {
-
                     /*  for each old scope which read...  */
                     if (oldScope[newScopeType] !== undefined) {
-
                         let oldScopeOps = Object.keys(oldScope[newScopeType])
                         for (let l = 0; l < oldScopeOps.length; l++) {
                             let oldScopeOp = oldScopeOps[l]
-
                             let oldScopeOpDetail = this.__opParse(oldScopeOp)
                             if (oldScopeOpDetail.action === "read") {
-
                                 /*  check combinations which outdate old scope  */
                                 let newOp = newScopeOpDetail
                                 let oldOp = oldScopeOpDetail
