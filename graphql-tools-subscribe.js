@@ -264,7 +264,9 @@ export default class GraphQLToolsSubscribe {
         let name = "subscribe"
         if (prefix !== "")
             name = prefix + capitalize(name)
-        return `${name}(cid: String!): String!`
+        return `# Subscribe to the current GraphQL query under the unique client id (CID)\n` +
+            `# and retrieve a unique subscription id (SID).\n` +
+            `${name}(cid: String!): String!`
     }
     makeResolverSubscribeFunction () {
         return (obj, args /*, ctx, info */) => {
@@ -279,7 +281,9 @@ export default class GraphQLToolsSubscribe {
         let name = "unsubscribe"
         if (prefix !== "")
             name = prefix + capitalize(name)
-        return `${name}(cid: String!, sid: String!): String!`
+        return `# Unsubscribe from the GraphQL query, identified by the subscription id (SID),\n` +
+            `# under the unique client id (CID).\n` +
+            `${name}(cid: String!, sid: String!): String!\n`
     }
     makeResolverUnsubscribeFunction () {
         return (obj, args /*, ctx, info */) => {
@@ -295,7 +299,8 @@ export default class GraphQLToolsSubscribe {
         let name = "subscriptions"
         if (prefix !== "")
             name = prefix + capitalize(name)
-        return `${name}(cid: String!, outdated: Boolean): [String]!`
+        return `# Retrieve all subscription ids (SIDs) under the unique client id (CID).\n` +
+            `${name}(cid: String!, outdated: Boolean): [String]!\n`
     }
     makeResolverSubscriptionsFunction () {
         return (obj, args /*, ctx, info */) => {
