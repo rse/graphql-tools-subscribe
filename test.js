@@ -85,7 +85,7 @@ let resolvers = {
         subscribe:     gts.makeResolverSubscribeFunction(),
         unsubscribe:   gts.makeResolverUnsubscribeFunction(),
         subscriptions: gts.makeResolverSubscriptionsFunction(),
-        ShoppingCard: (root, args, ctx, info) => {
+        ShoppingCard: (root, args, ctx /*, info */) => {
             let result
             if (args.id) {
                 result = ctx.shoppingCards.filter((sc) => sc.id === args.id)
@@ -100,7 +100,7 @@ let resolvers = {
             }
             return result
         },
-        Item: (root, args, ctx, info) => {
+        Item: (root, args, ctx /*, info */) => {
             let result
             if (args.id) {
                 result = ctx.items.filter((item) => item.id === args.id)
@@ -117,37 +117,37 @@ let resolvers = {
         }
     },
     RootMutation: {
-        createShoppingCard: (root, args, ctx, info) => {
+        createShoppingCard: (root, args, ctx /*, info */) => {
             let obj = { id: args.id, items: args.items ? args.items : [] }
             ctx.shoppingCards.push(obj)
             ctx.gts.scopeAdd(obj.id, "ShoppingCard", "create", "direct", "one")
             return obj
         },
-        updateShoppingCard: (root, args, ctx, info) => {
+        updateShoppingCard: (root, args, ctx /*, info */) => {
             let obj = ctx.shoppingCards.find((sc) => sc.id === args.id)
             obj.items = args.items
             ctx.gts.scopeAdd(obj.id, "ShoppingCard", "update", "direct", "one")
             return obj
         },
-        deleteShoppingCard: (root, args, ctx, info) => {
+        deleteShoppingCard: (root, args, ctx /*, info */) => {
             let idx = ctx.shoppingCards.findIndex((sc) => sc.id === args.id)
             ctx.shoppingCards.splice(idx, 1)
             ctx.gts.scopeAdd(args.id, "ShoppingCard", "delete", "direct", "one")
             return args.id
         },
-        createItem: (root, args, ctx, info) => {
+        createItem: (root, args, ctx /*, info */) => {
             let obj = { id: args.id, title: args.title }
             ctx.items.push(obj)
             ctx.gts.scopeAdd(obj.id, "Item", "create", "direct", "one")
             return obj
         },
-        updateItem: (root, args, ctx, info) => {
+        updateItem: (root, args, ctx /*, info */) => {
             let obj = ctx.items.find((item) => item.id === args.id)
             obj.title = args.title
             ctx.gts.scopeAdd(obj.id, "Item", "update", "direct", "one")
             return obj
         },
-        deleteItem: (root, args, ctx, info) => {
+        deleteItem: (root, args, ctx /*, info */) => {
             let idx = ctx.items.findIndex((item) => item.id === args.id)
             ctx.items.splice(idx, 1)
             ctx.gts.scopeAdd(args.id, "Item", "delete", "direct", "one")
@@ -155,7 +155,7 @@ let resolvers = {
         }
     },
     ShoppingCard: {
-        items: (shoppingCard, args, ctx, info) => {
+        items: (shoppingCard, args, ctx /*, info */) => {
             return shoppingCard.items.map((id) => {
                 let obj = ctx.items.find((item) => item.id === id)
                 ctx.gts.scopeAdd(obj.id, "Item", "read", "relation", "all")

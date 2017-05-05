@@ -33,7 +33,7 @@
         "eslint":               "~3.19.0"
     },
     "scripts": {
-        "test": "eslint --config eslint.json graphql-tools-subscribe.js && babel-node --presets es2015 test.js",
-        "prepublish": "eslint --config eslint.json graphql-tools-subscribe.js && babel --presets es2015 graphql-tools-subscribe.js >graphql-tools-subscribe.js5"
+        "test":       "eslint --config eslint.json graphql-tools-subscribe.js test.js && babel-node --presets es2015 test.js",
+        "prepublish": "eslint --config eslint.json graphql-tools-subscribe.js test.js && babel --presets es2015 graphql-tools-subscribe.js >graphql-tools-subscribe.js5"
     }
 }
