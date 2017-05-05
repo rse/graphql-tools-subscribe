@@ -20,17 +20,17 @@
     "homepage": "https://github.com/rse/graphql-tools-subscribe",
     "bugs":     "https://github.com/rse/graphql-tools-subscribe/issues",
     "dependencies": {
-        "pure-uuid":            "~1.4.0",
+        "pure-uuid":            "~1.4.5",
         "capitalize":           "~1.0.0"
     },
     "devDependencies": {
         "co":                   "~4.6.0",
-        "graphql":              "~0.7.0",
-        "graphql-tools":        "~0.7.2",
-        "babel-cli":            "~6.14.0",
-        "babel-preset-es2015":  "~6.14.0",
-        "babel-eslint":         "~6.1.2",
-        "eslint":               "~3.5.0"
+        "graphql":              "~0.9.6",
+        "graphql-tools":        "~0.11.0",
+        "babel-cli":            "~6.24.1",
+        "babel-preset-es2015":  "~6.24.1",
+        "babel-eslint":         "~7.2.3",
+        "eslint":               "~3.19.0"
     },
     "scripts": {
         "test": "eslint --config eslint.json graphql-tools-subscribe.js && babel-node --presets es2015 test.js",
