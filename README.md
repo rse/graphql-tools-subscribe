@@ -298,6 +298,13 @@ yield (makeQuery(`
 })
 ```
 
+See Also
+--------
+
+- [GraphQL Subscriptions in Apollo Client](https://dev-blog.apollodata.com/graphql-subscriptions-in-apollo-client-9a2457f015fb)
+- [Apollo Client, GraphQL Subscriptions](https://github.com/apollographql/graphql-subscriptions)
+- [Apollo Client, GraphQL Transport WebSocket](https://github.com/apollographql/subscriptions-transport-ws)
+
 License
 -------
 
