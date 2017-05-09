@@ -301,9 +301,15 @@ yield (makeQuery(`
 See Also
 --------
 
-- [GraphQL Subscriptions in Apollo Client](https://dev-blog.apollodata.com/graphql-subscriptions-in-apollo-client-9a2457f015fb)
-- [Apollo Client, GraphQL Subscriptions](https://github.com/apollographql/graphql-subscriptions)
-- [Apollo Client, GraphQL Transport WebSocket](https://github.com/apollographql/subscriptions-transport-ws)
+- [Specification: GraphQL Subscriptions](https://github.com/facebook/graphql/pull/267/files)
+- [Article: GraphQL Subscriptions](https://dev-blog.apollodata.com/the-next-step-for-realtime-data-in-graphql-b564b72eb07b)
+- [Article: GraphQL Subscriptions in Apollo Client](https://dev-blog.apollodata.com/graphql-subscriptions-in-apollo-client-9a2457f015fb)
+- [Article: GraphQL Subscriptions in GraphiQL](https://dev-blog.apollodata.com/how-to-use-subscriptions-in-graphiql-1d6ab8dbd74b)
+- [Article: GraphQL Subscriptions Proposal](https://dev-blog.apollodata.com/a-proposal-for-graphql-subscriptions-1d89b1934c18)
+- [Documentation: Apollo Client, GraphQL Subscriptions](http://dev.apollodata.com/react/subscriptions.html)
+- [Documentation: GraphQL Tools, GraphQL Subscriptions](http://dev.apollodata.com/tools/graphql-subscriptions/index.html)
+- [Module: Apollo Client, GraphQL Subscriptions](https://github.com/apollographql/graphql-subscriptions)
+- [Module: Apollo Client, GraphQL Transport WebSocket](https://github.com/apollographql/subscriptions-transport-ws)
 
 License
 -------
