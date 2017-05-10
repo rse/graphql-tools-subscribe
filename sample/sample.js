@@ -1,8 +1,33 @@
+/*
+**  GraphQL-Tools-Subscribe -- Subscription Framework for GraphQL-Tools
+**  Copyright (c) 2016-2017 Ralf S. Engelschall <rse@engelschall.com>
+**
+**  Permission is hereby granted, free of charge, to any person obtaining
+**  a copy of this software and associated documentation files (the
+**  "Software"), to deal in the Software without restriction, including
+**  without limitation the rights to use, copy, modify, merge, publish,
+**  distribute, sublicense, and/or sell copies of the Software, and to
+**  permit persons to whom the Software is furnished to do so, subject to
+**  the following conditions:
+**
+**  The above copyright notice and this permission notice shall be included
+**  in all copies or substantial portions of the Software.
+**
+**  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+**  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+**  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+**  IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+**  CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+**  TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+**  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
+
+/* eslint no-console: off */
 
 import co                    from "co"
 import * as GraphQL          from "graphql"
 import * as GraphQLTools     from "graphql-tools"
-import GraphQLToolsSubscribe from "./graphql-tools-subscribe.js"
+import GraphQLToolsSubscribe from ".."
 
 /*  create a new GraphQL-Tools-Subscribe context  */
 var gts = new GraphQLToolsSubscribe()
@@ -203,54 +228,54 @@ const makeQuery = (query, variables) => {
 
 /*  finally perform some GraphQL queries  */
 co(function * () {
-yield (makeQuery(`
-    query {
-        subscribe(cid: "c1")
-        subscriptions(cid: "c1")
-        ShoppingCard(id: "sc1") { id, items { id, title } }
-    }
-`, {}))
-yield (makeQuery(`
-    mutation {
-        i31: createItem(id: "i31", title: "Item 3.1") { id }
-        i32: createItem(id: "i32", title: "Item 3.2") { id }
-        createShoppingCard(id: "sc3", items: [ "i31", "i32" ]) {
-            id, items { id, title }
+    yield (makeQuery(`
+        query {
+            subscribe(cid: "c1")
+            subscriptions(cid: "c1")
+            ShoppingCard(id: "sc1") { id, items { id, title } }
         }
-    }
-`, {}))
-yield (makeQuery(`
-    query {
-        s1: subscriptions(cid: "c1")
-        s2: subscriptions(cid: "c1", outdated: true)
-    }
-`, {}))
-yield (makeQuery(`
-    mutation {
-        updateItem(id: "i11", title: "Updated Title") {
-            id
+    `, {}))
+    yield (makeQuery(`
+        mutation {
+            i31: createItem(id: "i31", title: "Item 3.1") { id }
+            i32: createItem(id: "i32", title: "Item 3.2") { id }
+            createShoppingCard(id: "sc3", items: [ "i31", "i32" ]) {
+                id, items { id, title }
+            }
         }
-    }
-`, {}))
-yield (makeQuery(`
-    query {
-        s1: subscriptions(cid: "c1")
-        s2: subscriptions(cid: "c1", outdated: true)
-    }
-`, {}))
-yield (makeQuery(`
-    query {
-        subscribe(cid: "c1")
-        subscriptions(cid: "c1")
-        ShoppingCard(id: "sc1") { id, items { id, title } }
-    }
-`, {}))
-yield (makeQuery(`
-    query {
-        s1: subscriptions(cid: "c1")
-        s2: subscriptions(cid: "c1", outdated: true)
-    }
-`, {}))
+    `, {}))
+    yield (makeQuery(`
+        query {
+            s1: subscriptions(cid: "c1")
+            s2: subscriptions(cid: "c1", outdated: true)
+        }
+    `, {}))
+    yield (makeQuery(`
+        mutation {
+            updateItem(id: "i11", title: "Updated Title") {
+                id
+            }
+        }
+    `, {}))
+    yield (makeQuery(`
+        query {
+            s1: subscriptions(cid: "c1")
+            s2: subscriptions(cid: "c1", outdated: true)
+        }
+    `, {}))
+    yield (makeQuery(`
+        query {
+            subscribe(cid: "c1")
+            subscriptions(cid: "c1")
+            ShoppingCard(id: "sc1") { id, items { id, title } }
+        }
+    `, {}))
+    yield (makeQuery(`
+        query {
+            s1: subscriptions(cid: "c1")
+            s2: subscriptions(cid: "c1", outdated: true)
+        }
+    `, {}))
 }).catch((err) => {
     console.log("ERROR", err)
 })
