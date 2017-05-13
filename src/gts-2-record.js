@@ -31,7 +31,7 @@ export default class gtsRecord {
     }
 
     /*  add entry to scope  */
-    scopeAdd (oid, type, action, via, onto) {
+    scopeAdd (type, oid, action, via, onto) {
         let op = `${action}:${via}:${onto}`
         let regexp = new RegExp("(?:" +
                   "read:direct:(?:one|many|all)" +
