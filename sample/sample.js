@@ -65,7 +65,7 @@ gts.setHandler(class subscriptionHandler {
         if (this.gs.scopeHasReadOp(scope)) {
             if (!this.store[sid])
                 this.store[sid] = {}
-            this.store[sid].scope   = scope
+            this.store[sid].scope    = scope
             this.store[sid].outdated = false
         }
     }
