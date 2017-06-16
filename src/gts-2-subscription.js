@@ -117,8 +117,6 @@ export default class gtsSubscription {
             /*  sanity check usage  */
             if (!ctx.scope)
                 throw new Error("subscription: only allowed on WebSocket connection")
-            if (info && info.operation && info.operation.operation !== "mutation")
-                throw new Error("subscription: only allowed in GraphQL \"mutation\" operation")
 
             /*  determine parameters  */
             let cid = obj.cid
