@@ -27,48 +27,16 @@
 import co                    from "co"
 import * as GraphQL          from "graphql"
 import * as GraphQLTools     from "graphql-tools"
+import GraphQLToolsTypes     from "graphql-tools-types"
 import GraphQLToolsSubscribe from ".."
 
 /*  create a new GraphQL-Tools-Subscribe context  */
-var gts = new GraphQLToolsSubscribe()
-
-/*  configure an in-core handler (actually the default one)  */
-gts.setHandler(class subscriptionHandler {
-    constructor (gs) {
-        this.gs    = gs
-        this.store = {}
-    }
-    onSubscribe (cid, sid) {
-        if (!this.store[sid])
-            this.store[sid] = {}
-        this.store[sid].cid = cid
-    }
-    onSubscriptions (cid, outdated) {
-        let sids = Object.keys(this.store)
-            .filter((sid) => this.store[sid].cid === cid)
-        if (outdated)
-            sids = sids.filter((sid) => this.store[sid].outdated)
-        return sids
-    }
-    onUnsubscribe (cid, sid) {
-        if (this.store[sid])
-            delete this.store[sid]
-    }
-    onScope (sid, scope) {
-        if (this.gs.scopeHasWriteOp(scope)) {
-            Object.keys(this.store).forEach((other) => {
-                if (other !== sid && this.store[other].scope)
-                    if (this.gs.scopeInvalidated(scope, this.store[other].scope))
-                        this.store[other].outdated = true
-            })
-        }
-        if (this.gs.scopeHasReadOp(scope)) {
-            if (!this.store[sid])
-                this.store[sid] = {}
-            this.store[sid].scope    = scope
-            this.store[sid].outdated = false
-        }
-    }
+let gts = new GraphQLToolsSubscribe({
+    pubsub: "spm",
+    keyval: "spm"
+})
+let gtsConn = gts.connection("dummy", (sids) => {
+    console.log("OUTDATED", sids)
 })
 
 /*  define a GraphQL schema  */
@@ -77,19 +45,24 @@ let definition = `
         query:    RootQuery
         mutation: RootMutation
     }
+    scalar UUID
+    scalar Void
     type RootQuery {
-        ${gts.makeResolverSubscriptionsSchema()}
-        ${gts.makeResolverSubscribeSchema()}
-        ${gts.makeResolverUnsubscribeSchema()}
-
         ShoppingCard(id: ID): [ShoppingCard]!
         Item(id: ID): [Item]!
+        ${gts.schemaSubscription()}
+    }
+    type Subscription {
+        ${gts.schemaSubscriptions()}
+        ${gts.schemaSubscribe()}
+        ${gts.schemaUnsubscribe()}
+        ${gts.schemaPause()}
+        ${gts.schemaResume()}
     }
     type RootMutation {
         createShoppingCard(id: ID!, items: [ID]): ShoppingCard
         updateShoppingCard(id: ID!, items: [ID]!): ShoppingCard
         deleteShoppingCard(id: ID!): ID
-
         createItem(id: ID!, title: String): Item
         updateItem(id: ID!, title: String!): Item
         deleteItem(id: ID!): ID
@@ -106,21 +79,20 @@ let definition = `
 
 /*  define GraphQL resolvers  */
 let resolvers = {
+    UUID: GraphQLToolsTypes.UUID({ name: "UUID", storage: "string" }),
+    Void: GraphQLToolsTypes.Void({ name: "Void" }),
     RootQuery: {
-        subscribe:     gts.makeResolverSubscribeFunction(),
-        unsubscribe:   gts.makeResolverUnsubscribeFunction(),
-        subscriptions: gts.makeResolverSubscriptionsFunction(),
         ShoppingCard: (root, args, ctx /*, info */) => {
             let result
             if (args.id) {
                 result = ctx.shoppingCards.filter((sc) => sc.id === args.id)
                 if (result.length > 0)
-                    ctx.gts.scopeAdd(result[0].id, "ShoppingCard", "read", "direct", "one")
+                    ctx.scope.record("ShoppingCard", result[0].id, "read", "direct", "one")
             }
             else {
                 result = ctx.shoppingCards
                 result.forEach((sc) => {
-                    ctx.gts.scopeAdd(sc.id, "ShoppingCard", "read", "direct", "all")
+                    ctx.scope.record("ShoppingCard", sc.id, "read", "direct", "all")
                 })
             }
             return result
@@ -130,52 +102,60 @@ let resolvers = {
             if (args.id) {
                 result = ctx.items.filter((item) => item.id === args.id)
                 if (result.length > 0)
-                    ctx.gts.scopeAdd(result[0].id, "Item", "read", "direct", "one")
+                    ctx.scope.record("Item", result[0].id, "read", "direct", "one")
             }
             else {
                 result = ctx.items
                 result.forEach((item) => {
-                    ctx.gts.scopeAdd(item.id, "Item", "read", "direct", "all")
+                    ctx.gts.scopeAdd("Item", item.id, "read", "direct", "all")
                 })
             }
             return result
-        }
+        },
+        Subscription: gts.resolverSubscription()
+    },
+    Subscription: {
+        subscribe:     gts.resolverSubscribe(),
+        unsubscribe:   gts.resolverUnsubscribe(),
+        subscriptions: gts.resolverSubscriptions(),
+        pause:         gts.resolverPause(),
+        resume:        gts.resolverResume()
     },
     RootMutation: {
         createShoppingCard: (root, args, ctx /*, info */) => {
             let obj = { id: args.id, items: args.items ? args.items : [] }
             ctx.shoppingCards.push(obj)
-            ctx.gts.scopeAdd(obj.id, "ShoppingCard", "create", "direct", "one")
+            ctx.scope.record("ShoppingCard", obj.id, "create", "direct", "one")
             return obj
         },
         updateShoppingCard: (root, args, ctx /*, info */) => {
             let obj = ctx.shoppingCards.find((sc) => sc.id === args.id)
             obj.items = args.items
-            ctx.gts.scopeAdd(obj.id, "ShoppingCard", "update", "direct", "one")
+            ctx.scope.record("ShoppingCard", obj.id, "update", "direct", "one")
             return obj
         },
         deleteShoppingCard: (root, args, ctx /*, info */) => {
             let idx = ctx.shoppingCards.findIndex((sc) => sc.id === args.id)
             ctx.shoppingCards.splice(idx, 1)
-            ctx.gts.scopeAdd(args.id, "ShoppingCard", "delete", "direct", "one")
+            ctx.scope.record("ShoppingCard", args.id, "delete", "direct", "one")
             return args.id
         },
         createItem: (root, args, ctx /*, info */) => {
             let obj = { id: args.id, title: args.title }
             ctx.items.push(obj)
-            ctx.gts.scopeAdd(obj.id, "Item", "create", "direct", "one")
+            ctx.scope.record("Item", obj.id, "create", "direct", "one")
             return obj
         },
         updateItem: (root, args, ctx /*, info */) => {
             let obj = ctx.items.find((item) => item.id === args.id)
             obj.title = args.title
-            ctx.gts.scopeAdd(obj.id, "Item", "update", "direct", "one")
+            ctx.scope.record("Item", obj.id, "update", "direct", "one")
             return obj
         },
         deleteItem: (root, args, ctx /*, info */) => {
             let idx = ctx.items.findIndex((item) => item.id === args.id)
             ctx.items.splice(idx, 1)
-            ctx.gts.scopeAdd(args.id, "Item", "delete", "direct", "one")
+            ctx.scope.record("Item", args.id, "delete", "direct", "one")
             return args.id
         }
     },
@@ -183,7 +163,7 @@ let resolvers = {
         items: (shoppingCard, args, ctx /*, info */) => {
             return shoppingCard.items.map((id) => {
                 let obj = ctx.items.find((item) => item.id === id)
-                ctx.gts.scopeAdd(obj.id, "Item", "read", "relation", "all")
+                ctx.scope.record("Item", obj.id, "read", "relation", "all")
                 return obj
             })
         }
@@ -214,14 +194,14 @@ let schema = GraphQLTools.makeExecutableSchema({
 /*  helper function for performing GraphQL queries  */
 const makeQuery = (query, variables) => {
     console.log("----------------------------------------------------------------------")
-    console.log("QUERY:\n" + query.replace(/^\s+/, "").replace(/\s+$/, ""))
-    ctx.gts.setQuery(query)
-    ctx.gts.scopeBegin()
+    console.log("QUERY:\n" + query.replace(/^s+/, "").replace(/(?:\s|\n)+/g, " ").replace(/\s+$/, ""))
+    let scope = gtsConn.scope(query)
+    ctx.scope = scope
     return GraphQL.graphql(schema, query, null, ctx, variables).then((result) => {
-        ctx.gts.scopeCommit()
+        scope.commit()
         console.log("RESULT: OK\n" + require("util").inspect(result, { depth: null }))
     }).catch((result) => {
-        ctx.gts.scopeReject()
+        scope.reject()
         console.log("RESULT: ERROR:\n" + result)
     })
 }
@@ -230,8 +210,7 @@ const makeQuery = (query, variables) => {
 co(function * () {
     yield (makeQuery(`
         query {
-            subscribe(cid: "c1")
-            subscriptions(cid: "c1")
+            Subscription { subscribe }
             ShoppingCard(id: "sc1") { id, items { id, title } }
         }
     `, {}))
@@ -246,8 +225,7 @@ co(function * () {
     `, {}))
     yield (makeQuery(`
         query {
-            s1: subscriptions(cid: "c1")
-            s2: subscriptions(cid: "c1", outdated: true)
+            Subscription { subscriptions }
         }
     `, {}))
     yield (makeQuery(`
@@ -259,21 +237,19 @@ co(function * () {
     `, {}))
     yield (makeQuery(`
         query {
-            s1: subscriptions(cid: "c1")
-            s2: subscriptions(cid: "c1", outdated: true)
+            Subscription { subscriptions }
         }
     `, {}))
     yield (makeQuery(`
         query {
-            subscribe(cid: "c1")
-            subscriptions(cid: "c1")
+            Subscription { subscribe }
+            Subscription { subscriptions }
             ShoppingCard(id: "sc1") { id, items { id, title } }
         }
     `, {}))
     yield (makeQuery(`
         query {
-            s1: subscriptions(cid: "c1")
-            s2: subscriptions(cid: "c1", outdated: true)
+            Subscription { subscriptions }
         }
     `, {}))
 }).catch((err) => {
