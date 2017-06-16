@@ -55,6 +55,28 @@ See Also
 - [Module: Apollo Client, GraphQL Subscriptions](https://github.com/apollographql/graphql-subscriptions)
 - [Module: Apollo Client, GraphQL Transport WebSocket](https://github.com/apollographql/subscriptions-transport-ws)
 
+Assumptions
+-----------
+
+It is assumed that you define the GraphQL
+scalar type `UUID` and `Void` with the help of
+[GraphQL-Tools-Types](https://github.com/rse/graphql-tools-types):
+
+```js
+import GraphQLToolsTypes from "graphql-tools-types"
+...
+let definition = `
+    scalar Void
+    scalar UUID
+    ...
+`
+let resolvers = {
+    Void:     GraphQLToolsTypes.Void({ name: "Void" }),
+    UUID:     GraphQLToolsTypes.UUID({ name: "UUID", storage: "string" }),
+    ...
+}
+```
+
 License
 -------
 

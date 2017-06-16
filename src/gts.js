@@ -24,17 +24,39 @@
 
 /*  external dependencies  */
 import aggregation             from "aggregation/es6"
+import PubSub                  from "ipc-pubsub"
+import KeyVal                  from "ipc-keyval"
 
 /*  internal dependencies  */
-import gtsBase                 from "./gts-1-base"
-import gtsRecord               from "./gts-2-record"
-import gtsCheck                from "./gts-3-check"
-import gtsFactory              from "./gts-4-factory"
+import gtsTracking             from "./gts-1-tracking"
+import gtsSubscription         from "./gts-2-subscription"
+import gtsEvaluation           from "./gts-3-evaluation"
 
 /*  the API class  */
-class GraphQLToolsSubscribe extends aggregation(gtsBase, gtsRecord, gtsCheck, gtsFactory) {
-    constructor (query, options = {}) {
-        super(query, options)
+class GraphQLToolsSubscribe extends aggregation(
+    gtsTracking,
+    gtsSubscription,
+    gtsEvaluation
+) {
+    /*  the class constructor  */
+    constructor (options = {}) {
+        super(options)
+        this.options = Object.assign({
+            pubsub: "spm",
+            keyval: "spm"
+        }, options)
+        this.keyval = new KeyVal(this.options.keyval)
+        this.keyval.open()
+        this.pubsub = new PubSub(this.options.pubsub)
+        this.pubsub.open()
+        this.pubsub.subscribe("outdated", (sids) => {
+            this.scopeOutdatedEvent(sids)
+        })
+    }
+
+    /*  version information  */
+    version () {
+        return { major: 0, minor: 9, micro: 4, date: 20170510 }
     }
 }
 

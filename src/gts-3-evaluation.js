@@ -22,8 +22,11 @@
 **  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-/*  the mixin class  */
-export default class gtsCheck {
+/*  external dependencies  */
+import Promise from "bluebird"
+
+/*  the API mixin class  */
+export default class gtsEvaluation {
     /*  parse the operation string  */
     __opParse (op) {
         let m = op.match(/^(read|create|update|delete):(direct|relation):(one|many|all)$/)
@@ -34,9 +37,9 @@ export default class gtsCheck {
 
     /*  check whether scope has any read operations  */
     scopeHasReadOp (scope) {
-        let types = Object.keys(scope)
+        let types = Object.keys(scope.recods)
         for (var i = 0; i < types.length; i++) {
-            let ops = Object.keys(scope[types[i]])
+            let ops = Object.keys(scope.records[types[i]])
             for (var j = 0; j < ops.length; j++) {
                 let info = this.__opParse(ops[j])
                 if (info.action === "read")
@@ -48,9 +51,9 @@ export default class gtsCheck {
 
     /*  check whether scope has any write operations  */
     scopeHasWriteOp (scope) {
-        let types = Object.keys(scope)
+        let types = Object.keys(scope.records)
         for (var i = 0; i < types.length; i++) {
-            let ops = Object.keys(scope[types[i]])
+            let ops = Object.keys(scope.records[types[i]])
             for (var j = 0; j < ops.length; j++) {
                 let info = this.__opParse(ops[j])
                 if (info.action.match(/^(?:create|update|delete)$/))
@@ -61,7 +64,7 @@ export default class gtsCheck {
     }
 
     /*  does a new scope outdate an old scope  */
-    scopeInvalidated (newScope, oldScope) {
+    scopeOutdated (newScope, oldScope) {
         /*  case 1: "Is an old read OID now written onto?"  */
         let newScopeWriteOID = {}
         Object.keys(newScope).forEach((type) => {
@@ -71,6 +74,7 @@ export default class gtsCheck {
                     newScope[type][op].forEach((oid) => { newScopeWriteOID[oid] = true })
             })
         })
+        /* eslint no-console: off */
         let oldScopeTypes = Object.keys(oldScope)
         for (let i = 0; i < oldScopeTypes.length; i++) {
             let oldScopeType = oldScopeTypes[i]
@@ -142,6 +146,82 @@ export default class gtsCheck {
 
         /*  ...else the scope is still valid (not outdated)  */
         return false
+    }
+
+    /*  process a committed scope  */
+    async scopeProcess (scope) {
+        /*  determine parameters  */
+        let sid = scope.sid
+        let cid = scope.connection.cid
+
+        /*  determine whether any write operations exist in the scope  */
+        let hasWriteOps = this.scopeHasWriteOp(scope)
+
+        /*  determine whether there is a subscription for the scope  */
+        let hasSubscription = await this.keyval.get(`sid:${sid},cid:${cid}`)
+
+        /*  queries (scopes without writes)...  */
+        if (!hasWriteOps) {
+            if (hasSubscription) {
+                /*  ...with subscriptions are remembered  */
+                await this.keyval.acquire()
+                let rec = await this.keyval.get(`sid:${sid},rec`)
+                if (rec === undefined)
+                    await this.keyval.put(`sid:${sid},rec`, scope.records)
+                await this.keyval.release()
+            }
+            else {
+                /*  ...without subscriptions can be just destroyed
+                    (and the processing short-circuited)  */
+                scope.destroy()
+                return
+            }
+        }
+
+        /*  mutations (scopes with writes) might outdate queries (scopes with reads)  */
+        if (hasWriteOps) {
+            /*  iterate over all stored scopes  */
+            await this.keyval.acquire()
+            let keys = await this.keyval.keys("sid:*,rec")
+            let sids = keys.map((key) => key.replace(/^sid:(.+?),rec$/, "$1"))
+            let outdatedSids = []
+            await Promise.each(sids, async (otherSid) => {
+                if (otherSid === sid)
+                    return
+                let records = await this.keyval.get(`sid:${otherSid},rec`)
+                if (this.scopeOutdated(scope.records, records))
+                    outdatedSids.push(otherSid)
+            })
+            await this.keyval.release()
+            if (outdatedSids.length > 0)
+                this.pubsub.publish("outdated", outdatedSids)
+        }
+    }
+
+    /*  process an outdated event  */
+    scopeOutdatedEvent (sids) {
+        this.connections.forEach((conn) => {
+            let outdated = []
+            conn.scopes.forEach((scope) => {
+                if (sids.indexOf(scope.sid) >= 0)
+                    outdated.push(scope.sid)
+            })
+            if (outdated.length > 0)
+                conn.notify(outdated)
+        })
+    }
+
+    /*  destroy a scope  */
+    async scopeDestroy (scope) {
+        let sid = scope.sid
+
+        /*  scope records with no more corresponding subscriptions are deleted  */
+        await this.keyval.acquire()
+        let keys = await this.keyval.keys(`sid:${sid},cid:*`)
+        let cids = keys.map((key) => key.replace(/^sid:.+?,cid:(.+)$/, "$1"))
+        if (cids.length === 0)
+            await this.keyval.del(`sid:${sid},rec`)
+        await this.keyval.release()
     }
 }
 
