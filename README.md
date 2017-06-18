@@ -2,8 +2,6 @@
 GraphQL-Tools-Subscribe
 =======================
 
-[HERE BE DRAGONS -- EARLY ADOPTERS ONLY]
-
 Subscription Framework for GraphQL-Tools
 
 <p/>
@@ -15,8 +13,8 @@ Subscription Framework for GraphQL-Tools
 About
 -----
 
-This Node.js module provides a subscription framework for [GraphQL
-Tools](https://github.com/apollostack/graphql-tools) or plain
+This Node.js module provides a subscription framework for
+[GraphQL Tools](https://github.com/apollostack/graphql-tools) or plain
 [GraphQL.js](https://github.com/graphql/graphql-js) which allows
 GraphQL clients to subscribe on their query and find out whether their
 previously subscribed queries should be refetched. The framework is
@@ -40,7 +38,7 @@ Application Programming Interface (API)
 Usage Example
 -------------
 
-See [sample script](tst/gts.js)
+See [sample script](sample/sample.js)
 
 See Also
 --------
