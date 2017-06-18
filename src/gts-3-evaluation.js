@@ -201,11 +201,12 @@ export default class gtsEvaluation {
     /*  process an outdated event  */
     scopeOutdatedEvent (sids) {
         this.connections.forEach((conn) => {
-            let outdated = []
+            let outdated = {}
             conn.scopes.forEach((scope) => {
                 if (sids.indexOf(scope.sid) >= 0)
-                    outdated.push(scope.sid)
+                    outdated[scope.sid] = true
             })
+            outdated = Object.keys(outdated)
             if (outdated.length > 0)
                 conn.notify(outdated)
         })
