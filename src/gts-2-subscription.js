@@ -38,7 +38,7 @@ export default class gtsSubscription {
 
             /*  provide a wrapper object containing the unique connection id  */
             return {
-                cid: ctx.scope.connection.cid
+                cid: ctx.scope.connection !== null ? ctx.scope.connection.cid : "<none>"
             }
         }
     }

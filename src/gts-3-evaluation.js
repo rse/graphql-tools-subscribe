@@ -152,7 +152,7 @@ export default class gtsEvaluation {
     async scopeProcess (scope) {
         /*  determine parameters  */
         let sid = scope.sid
-        let cid = scope.connection.cid
+        let cid = scope.connection !== null ? scope.connection.cid : "<none>"
 
         /*  determine whether any write operations exist in the scope  */
         let hasWriteOps = this.scopeHasWriteOp(scope)
