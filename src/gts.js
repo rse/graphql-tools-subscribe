@@ -61,10 +61,10 @@ class GraphQLToolsSubscribe extends aggregation(
 
     /*  close service  */
     async close () {
+        this.subscription.unsubscribe()
+        this.subscription = null
         await this.keyval.close()
         await this.pubsub.close()
-        this.subscription.unsubscribe()
-        this.subscroption = null
     }
 
     /*  version information  */
