@@ -46,12 +46,25 @@ class GraphQLToolsSubscribe extends aggregation(
             keyval: "spm"
         }, options)
         this.keyval = new KeyVal(this.options.keyval)
-        this.keyval.open()
         this.pubsub = new PubSub(this.options.pubsub)
-        this.pubsub.open()
-        this.pubsub.subscribe("outdated", (sids) => {
+        this.unsubscribe = null
+    }
+
+    /*  open service  */
+    async open () {
+        await this.keyval.open()
+        await this.pubsub.open()
+        this.unsubscribe = await this.pubsub.subscribe("outdated", (sids) => {
             this.scopeOutdatedEvent(sids)
         })
+    }
+
+    /*  close service  */
+    async close () {
+        await this.keyval.close()
+        await this.pubsub.close()
+        this.unsubscribe()
+        this.unsubscribe = null
     }
 
     /*  version information  */
