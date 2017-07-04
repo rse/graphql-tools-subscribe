@@ -47,14 +47,14 @@ class GraphQLToolsSubscribe extends aggregation(
         }, options)
         this.keyval = new KeyVal(this.options.keyval)
         this.pubsub = new PubSub(this.options.pubsub)
-        this.unsubscribe = null
+        this.subscription = null
     }
 
     /*  open service  */
     async open () {
         await this.keyval.open()
         await this.pubsub.open()
-        this.unsubscribe = await this.pubsub.subscribe("outdated", (sids) => {
+        this.subscription = await this.pubsub.subscribe("outdated", (sids) => {
             this.scopeOutdatedEvent(sids)
         })
     }
@@ -63,8 +63,8 @@ class GraphQLToolsSubscribe extends aggregation(
     async close () {
         await this.keyval.close()
         await this.pubsub.close()
-        this.unsubscribe()
-        this.unsubscribe = null
+        this.subscription.unsubscribe()
+        this.subscroption = null
     }
 
     /*  version information  */
