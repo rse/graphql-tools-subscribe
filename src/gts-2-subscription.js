@@ -27,8 +27,8 @@ export default class gtsSubscription {
     /*  the factory methods for resolving "Subscription" root type  */
     schemaSubscription () {
         return "" +
-            "#  Access the GraphQL Subscription service.\n" +
-            "Subscription: Subscription"
+            "#   Access the GraphQL Subscription service.\n" +
+            "_Subscription: _Subscription"
     }
     resolverSubscription () {
         return async (obj, args, ctx, info) => {
@@ -46,8 +46,8 @@ export default class gtsSubscription {
     /*  the factory methods for resolving "subscribe" (mutation)  */
     schemaSubscribe () {
         return "" +
-            "#  Subscribe to the current GraphQL query\n" +
-            "#  and retrieve its unique subscription id (SID).\n" +
+            "#   Subscribe to the current GraphQL query\n" +
+            "#   and retrieve its unique subscription id (SID).\n" +
             "subscribe: UUID!"
     }
     resolverSubscribe () {
@@ -75,8 +75,8 @@ export default class gtsSubscription {
     /*  the factory methods for resolving "unsubscribe" (mutation)  */
     schemaUnsubscribe (prefix = "") {
         return "" +
-            "#  Unsubscribe from the GraphQL query\n" +
-            "#  identified by the unique subscription id (SID).\n" +
+            "#   Unsubscribe from the GraphQL query\n" +
+            "#   identified by the unique subscription id (SID).\n" +
             "unsubscribe(sid: UUID!): Void\n"
     }
     resolverUnsubscribe () {
@@ -109,7 +109,7 @@ export default class gtsSubscription {
     /*  the factory methods for resolving "subscriptions" (query)  */
     schemaSubscriptions (prefix = "") {
         return "" +
-            "#  Retrieve all (or just the outdated) active subscription ids (SIDs).\n" +
+            "#   Retrieve all (or just the outdated) active subscription ids (SIDs).\n" +
             "subscriptions: [UUID]!\n"
     }
     resolverSubscriptions () {
@@ -135,8 +135,8 @@ export default class gtsSubscription {
     /*  the factory methods for resolving "pause" (mutation)  */
     schemaPause (prefix = "") {
         return "" +
-            "#  Pause active subscription,\n" +
-            "#  identified by the unique subscription id (SID).\n" +
+            "#   Pause active subscription,\n" +
+            "#   identified by the unique subscription id (SID).\n" +
             "pause(sid: UUID!): Void\n"
     }
     resolverPause () {
@@ -173,8 +173,8 @@ export default class gtsSubscription {
     /*  the factory methods for resolving "resume" (mutation)  */
     schemaResume (prefix = "") {
         return "" +
-            "#  Resume active subscription,\n" +
-            "#  identified by the unique subscription id (SID).\n" +
+            "#   Resume active subscription,\n" +
+            "#   identified by the unique subscription id (SID).\n" +
             "resume(sid: UUID!): Void\n"
     }
     resolverResume () {
