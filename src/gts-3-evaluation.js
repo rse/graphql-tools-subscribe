@@ -37,7 +37,7 @@ export default class gtsEvaluation {
 
     /*  check whether scope has any read operations  */
     scopeHasReadOp (scope) {
-        let types = Object.keys(scope.recods)
+        let types = Object.keys(scope.records)
         for (var i = 0; i < types.length; i++) {
             let ops = Object.keys(scope.records[types[i]])
             for (var j = 0; j < ops.length; j++) {
