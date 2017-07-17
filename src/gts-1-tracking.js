@@ -53,8 +53,8 @@ class Scope extends EventEmitter {
         const regexp = new RegExp("(?:" +
                   "read:(?:direct|relation):(?:one|many|all)" +
             "|" + "create:direct:one" +
-            "|" + "update:direct:(?:one|many)" +
-            "|" + "delete:direct:one" +
+            "|" + "update:direct:(?:one|many|all)" +
+            "|" + "delete:direct:(?:one|many|all)" +
         ")")
         if (!regexp.test(op))
             throw new Error("invalid argument(s): combination of action+via+onto not allowed")
