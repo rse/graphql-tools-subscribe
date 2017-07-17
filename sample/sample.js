@@ -52,7 +52,7 @@ let definition = `
         Item(id: ID): [Item]!
         ${gts.schemaSubscription()}
     }
-    type Subscription {
+    type _Subscription {
         ${gts.schemaSubscriptions()}
         ${gts.schemaSubscribe()}
         ${gts.schemaUnsubscribe()}
@@ -112,9 +112,9 @@ let resolvers = {
             }
             return result
         },
-        Subscription: gts.resolverSubscription()
+        _Subscription: gts.resolverSubscription()
     },
-    Subscription: {
+    _Subscription: {
         subscribe:     gts.resolverSubscribe(),
         unsubscribe:   gts.resolverUnsubscribe(),
         subscriptions: gts.resolverSubscriptions(),
@@ -210,7 +210,7 @@ const makeQuery = (query, variables) => {
 co(function * () {
     yield (makeQuery(`
         query {
-            Subscription { subscribe }
+            _Subscription { subscribe }
             ShoppingCard(id: "sc1") { id, items { id, title } }
         }
     `, {}))
@@ -225,7 +225,7 @@ co(function * () {
     `, {}))
     yield (makeQuery(`
         query {
-            Subscription { subscriptions }
+            _Subscription { subscriptions }
         }
     `, {}))
     yield (makeQuery(`
@@ -237,19 +237,19 @@ co(function * () {
     `, {}))
     yield (makeQuery(`
         query {
-            Subscription { subscriptions }
+            _Subscription { subscriptions }
         }
     `, {}))
     yield (makeQuery(`
         query {
-            Subscription { subscribe }
-            Subscription { subscriptions }
+            _Subscription { subscribe }
+            _Subscription { subscriptions }
             ShoppingCard(id: "sc1") { id, items { id, title } }
         }
     `, {}))
     yield (makeQuery(`
         query {
-            Subscription { subscriptions }
+            _Subscription { subscriptions }
         }
     `, {}))
 }).catch((err) => {
