@@ -95,13 +95,12 @@ export default class gtsEvaluation {
         /*  case 2: "could an old read potentially had taken write results into account?"
             For this we have to know that the valid operation combinations are:
 
-                        ACTION  VIA      ONTO
-                        ------- -------- ------------
-            old Scope:  read    direct   one|many|all
-            old Scope   read    relation one|many|all
-            new Scope:  create  direct   one
-            new Scope:  update  direct   one|many
-            new Scope:  delete  direct   one           */
+                        ACTION  VIA             ONTO
+                        ------- --------------- ------------
+            old Scope:  read    direct|relation one|many|all
+            new Scope:  create  direct          one
+            new Scope:  update  direct          one|many
+            new Scope:  delete  direct          one           */
 
         /*  for each new scope which writes...  */
         let newScopeTypes = Object.keys(newScope)
