@@ -195,8 +195,6 @@ export default class gtsEvaluation {
             let sids = keys.map((key) => key.replace(/^sid:(.+?),rec$/, "$1"))
             let outdatedSids = []
             await Promise.each(sids, async (otherSid) => {
-                if (otherSid === sid)
-                    return
                 let records = await this.keyval.get(`sid:${otherSid},rec`)
                 if (this.scopeOutdated(scope.records, records))
                     outdatedSids.push(otherSid)
