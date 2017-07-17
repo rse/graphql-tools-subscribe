@@ -98,7 +98,7 @@ export default class gtsEvaluation {
                         ACTION  VIA      ONTO
                         ------- -------- ------------
             old Scope:  read    direct   one|many|all
-            old Scope   read    relation many|all
+            old Scope   read    relation one|many|all
             new Scope:  create  direct   one
             new Scope:  update  direct   one|many
             new Scope:  delete  direct   one           */

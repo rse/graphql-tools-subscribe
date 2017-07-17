@@ -52,7 +52,7 @@ class Scope extends EventEmitter {
         const op = `${action}:${via}:${onto}`
         const regexp = new RegExp("(?:" +
                   "read:direct:(?:one|many|all)" +
-            "|" + "read:relation:(?:many|all)" +
+            "|" + "read:relation:(?:one|many|all)" +
             "|" + "create:direct:one" +
             "|" + "update:direct:(?:one|many)" +
             "|" + "delete:direct:one" +
