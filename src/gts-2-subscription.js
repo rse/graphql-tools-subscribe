@@ -200,7 +200,7 @@ export default class gtsSubscription {
                 await this.keyval.release()
                 throw new Error(`subscription "${sid}" not paused`)
             }
-            await this.keyval.put(`sid:${sid},cid:${cid},paused`, "subscribed")
+            await this.keyval.put(`sid:${sid},cid:${cid}`, "subscribed")
             await this.keyval.release()
 
             /*  return no result  */
