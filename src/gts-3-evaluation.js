@@ -65,15 +65,23 @@ export default class gtsEvaluation {
 
     /*  does a new scope outdate an old scope  */
     scopeOutdated (newScope, oldScope) {
-        /*  case 1: "Is an old read OID now written onto?"  */
+        /*  ==== CASE 1 ====
+            "Is an old/previously read OID now written onto?"  */
+
+        /*  find all OIDs in new scope which write  */
         let newScopeWriteOID = {}
         Object.keys(newScope).forEach((type) => {
             Object.keys(newScope[type]).forEach((op) => {
                 let opDetail = this.__opParse(op)
-                if (opDetail.action.match(/^(?:update|delete)$/))
-                    newScope[type][op].forEach((oid) => { newScopeWriteOID[oid] = true })
+                if (opDetail.action.match(/^(?:update|delete)$/)) {
+                    newScope[type][op].forEach((oid) => {
+                        newScopeWriteOID[oid] = true
+                    })
+                }
             })
         })
+
+        /*  for each old scope which reads...  */
         let oldScopeTypes = Object.keys(oldScope)
         for (let i = 0; i < oldScopeTypes.length; i++) {
             let oldScopeType = oldScopeTypes[i]
@@ -82,6 +90,7 @@ export default class gtsEvaluation {
                 let oldScopeOp = oldScopeOps[j]
                 let oldScopeOpDetail = this.__opParse(oldScopeOp)
                 if (oldScopeOpDetail.action === "read") {
+                    /*  ...check if any of its OIDs match the write OIDs in the new scope  */
                     let oldScopeOIDs = oldScope[oldScopeType][oldScopeOp]
                     for (let k = 0; k < oldScopeOIDs.length; k++) {
                         let oid = oldScopeOIDs[k]
@@ -92,15 +101,16 @@ export default class gtsEvaluation {
             }
         }
 
-        /*  case 2: "could an old read potentially had taken write results into account?"
+        /*  ==== CASE 2 ====
+            "Has an old/previously read OID potentially had taken write results into account?"
             For this we have to know that the valid operation combinations are:
 
                         ACTION  VIA             ONTO
                         ------- --------------- ------------
             old Scope:  read    direct|relation one|many|all
             new Scope:  create  direct          one
-            new Scope:  update  direct          one|many
-            new Scope:  delete  direct          one           */
+            new Scope:  update  direct          one|many|all
+            new Scope:  delete  direct          one|many|all  */
 
         /*  for each new scope which writes...  */
         let newScopeTypes = Object.keys(newScope)
@@ -121,19 +131,20 @@ export default class gtsEvaluation {
                                 /*  check combinations which outdate old scope  */
                                 let newOp = newScopeOpDetail
                                 let oldOp = oldScopeOpDetail
-                                if (   newOp.action === "create"
-                                    && oldOp.via === "direct"
+
+                                /*  create:*:* --outdates--> read:*:(many|all)  */
+                                if (newOp.action === "create"
                                     && (oldOp.onto === "many" || oldOp.onto === "all"))
                                     return true
-                                else if (   newOp.action === "update"
-                                         && newOp.onto === "many"
-                                         && oldOp.via === "direct"
-                                         && (oldOp.onto === "many" || oldOp.onto === "all"))
+
+                                /*  update:*:* --outdates--> read:*:(many|all)  */
+                                else if (newOp.action === "update"
+                                    && (oldOp.onto === "many" || oldOp.onto === "all"))
                                     return true
 
-                                else if (   newOp.action === "delete"
-                                         && oldOp.via === "direct"
-                                         && (oldOp.onto === "many" || oldOp.onto === "all"))
+                                /*  delete:*:* --outdates--> read:*:(many|all)  */
+                                else if (newOp.action === "delete"
+                                    && (oldOp.onto === "many" || oldOp.onto === "all"))
                                     return true
                             }
                         }
