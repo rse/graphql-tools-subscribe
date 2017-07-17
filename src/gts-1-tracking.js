@@ -51,8 +51,7 @@ class Scope extends EventEmitter {
         /*  determine and sanity check operation  */
         const op = `${action}:${via}:${onto}`
         const regexp = new RegExp("(?:" +
-                  "read:direct:(?:one|many|all)" +
-            "|" + "read:relation:(?:one|many|all)" +
+                  "read:(?:direct|relation):(?:one|many|all)" +
             "|" + "create:direct:one" +
             "|" + "update:direct:(?:one|many)" +
             "|" + "delete:direct:one" +
