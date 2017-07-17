@@ -196,7 +196,7 @@ export default class gtsSubscription {
                 await this.keyval.release()
                 throw new Error(`no such subscription "${sid}"`)
             }
-            else if (subscription === "paused") {
+            else if (subscription !== "paused") {
                 await this.keyval.release()
                 throw new Error(`subscription "${sid}" not paused`)
             }
