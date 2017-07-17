@@ -74,7 +74,6 @@ export default class gtsEvaluation {
                     newScope[type][op].forEach((oid) => { newScopeWriteOID[oid] = true })
             })
         })
-        /* eslint no-console: off */
         let oldScopeTypes = Object.keys(oldScope)
         for (let i = 0; i < oldScopeTypes.length; i++) {
             let oldScopeType = oldScopeTypes[i]
