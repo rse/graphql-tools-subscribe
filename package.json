@@ -1,6 +1,6 @@
 {
     "name":        "graphql-tools-subscribe",
-    "version":     "0.9.24",
+    "version":     "0.9.25",
     "description": "Subscription Framework for GraphQL-Tools",
     "keywords":    [ "graphql", "graphql-tools", "subscribe" ],
     "main":        "lib/gts.js",
