@@ -35,6 +35,7 @@ let gts = new GraphQLToolsSubscribe({
     pubsub: "spm",
     keyval: "spm"
 })
+gts.open()
 let gtsConn = gts.connection("dummy", (sids) => {
     console.log("OUTDATED", sids)
 })
