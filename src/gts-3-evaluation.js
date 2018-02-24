@@ -155,7 +155,7 @@ export default class gtsEvaluation {
         let sid = scope.sid
         let cid = scope.connection !== null ? scope.connection.cid : "<none>"
 
-        /*  determine whether any write operations exist in the scope  */
+        /*  determine whether any write operations exist in the scope records  */
         let hasWriteOps = this.__recordsContainOp(scope.records, (op) =>
             op.action.match(/^(?:create|update|delete)$/))
 
@@ -176,13 +176,12 @@ export default class gtsEvaluation {
                 /*  ...without subscriptions can be just destroyed
                     (and the processing short-circuited)  */
                 scope.destroy()
-                return
             }
         }
 
         /*  mutations (scopes with writes) might outdate queries (scopes with reads)  */
-        if (hasWriteOps) {
-            /*  iterate over all stored scopes  */
+        else {
+            /*  iterate over all stored scope records  */
             await this.keyval.acquire()
             let keys = await this.keyval.keys("sid:*,rec")
             let sids = keys.map((key) => key.replace(/^sid:(.+?),rec$/, "$1"))
