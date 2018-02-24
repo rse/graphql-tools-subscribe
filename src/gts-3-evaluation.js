@@ -153,11 +153,11 @@ export default class gtsEvaluation {
         let hasWriteOps = this.__recordsContainOp(scope.records, (op) =>
             op.action.match(/^(?:create|update|delete)$/))
 
-        /*  determine whether there is a subscription for the scope  */
-        let hasSubscription = await this.keyval.get(`sid:${sid},cid:${cid}`)
-
         /*  queries (scopes without writes)...  */
         if (!hasWriteOps) {
+            /*  (determine whether there is a subscription for the scope)  */
+            let hasSubscription = await this.keyval.get(`sid:${sid},cid:${cid}`)
+
             if (hasSubscription) {
                 /*  ...with subscriptions are remembered  */
                 await this.keyval.acquire()
