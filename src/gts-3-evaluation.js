@@ -36,7 +36,7 @@ export default class gtsEvaluation {
     }
 
     /*  check whether scope has a particular operation  */
-    scopeHasOp (records, cb) {
+    __recordsContainOp (records, cb) {
         let types = Object.keys(records)
         for (var i = 0; i < types.length; i++) {
             let ops = Object.keys(records[types[i]])
@@ -150,7 +150,7 @@ export default class gtsEvaluation {
         let cid = scope.connection !== null ? scope.connection.cid : "<none>"
 
         /*  determine whether any write operations exist in the scope  */
-        let hasWriteOps = this.scopeHasOp(scope.records, (op) =>
+        let hasWriteOps = this.__recordsContainOp(scope.records, (op) =>
             op.action.match(/^(?:create|update|delete)$/))
 
         /*  determine whether there is a subscription for the scope  */
