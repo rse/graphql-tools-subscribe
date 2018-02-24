@@ -34,7 +34,7 @@ export default class gtsSubscription {
         return async (obj, args, ctx, info) => {
             /*  sanity check usage  */
             if (!ctx.scope)
-                throw new Error("subscribe: only allowed on WebSocket connection")
+                throw new Error("_Subscription: only allowed on WebSocket connection")
 
             /*  provide a wrapper object containing the unique connection id  */
             return {
