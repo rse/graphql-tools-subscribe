@@ -108,7 +108,7 @@ let resolvers = {
             else {
                 result = ctx.items
                 result.forEach((item) => {
-                    ctx.gts.scopeAdd("Item", item.id, "read", "direct", "all")
+                    ctx.scope.record("Item", item.id, "read", "direct", "all")
                 })
             }
             return result
