@@ -35,28 +35,14 @@ export default class gtsEvaluation {
         return { action: m[1], via: m[2], onto: m[3] }
     }
 
-    /*  check whether scope has any read operations  */
-    scopeHasReadOp (scope) {
-        let types = Object.keys(scope.records)
+    /*  check whether scope has a particular operation  */
+    scopeHasOp (records, cb) {
+        let types = Object.keys(records)
         for (var i = 0; i < types.length; i++) {
-            let ops = Object.keys(scope.records[types[i]])
+            let ops = Object.keys(records[types[i]])
             for (var j = 0; j < ops.length; j++) {
-                let info = this.__opParse(ops[j])
-                if (info.action === "read")
-                    return true
-            }
-        }
-        return false
-    }
-
-    /*  check whether scope has any write operations  */
-    scopeHasWriteOp (scope) {
-        let types = Object.keys(scope.records)
-        for (var i = 0; i < types.length; i++) {
-            let ops = Object.keys(scope.records[types[i]])
-            for (var j = 0; j < ops.length; j++) {
-                let info = this.__opParse(ops[j])
-                if (info.action.match(/^(?:create|update|delete)$/))
+                let op = this.__opParse(ops[j])
+                if (cb(op))
                     return true
             }
         }
@@ -64,37 +50,37 @@ export default class gtsEvaluation {
     }
 
     /*  does a new scope outdate an old scope  */
-    scopeOutdated (newScope, oldScope) {
+    scopeOutdated (recordsNew, recordsOld) {
         /*  ==== CASE 1 ====
             "Is an old/previously read OID now written onto?"  */
 
         /*  find all OIDs in new scope which write  */
-        let newScopeWriteOID = {}
-        Object.keys(newScope).forEach((type) => {
-            Object.keys(newScope[type]).forEach((op) => {
+        let recordsNewWriteOID = {}
+        Object.keys(recordsNew).forEach((type) => {
+            Object.keys(recordsNew[type]).forEach((op) => {
                 let opDetail = this.__opParse(op)
                 if (opDetail.action.match(/^(?:update|delete)$/)) {
-                    newScope[type][op].forEach((oid) => {
-                        newScopeWriteOID[oid] = true
+                    recordsNew[type][op].forEach((oid) => {
+                        recordsNewWriteOID[oid] = true
                     })
                 }
             })
         })
 
         /*  for each old scope which reads...  */
-        let oldScopeTypes = Object.keys(oldScope)
-        for (let i = 0; i < oldScopeTypes.length; i++) {
-            let oldScopeType = oldScopeTypes[i]
-            let oldScopeOps = Object.keys(oldScope[oldScopeType])
-            for (let j = 0; j < oldScopeOps.length; j++) {
-                let oldScopeOp = oldScopeOps[j]
-                let oldScopeOpDetail = this.__opParse(oldScopeOp)
-                if (oldScopeOpDetail.action === "read") {
+        let recordsOldTypes = Object.keys(recordsOld)
+        for (let i = 0; i < recordsOldTypes.length; i++) {
+            let recordsOldType = recordsOldTypes[i]
+            let recordsOldOps = Object.keys(recordsOld[recordsOldType])
+            for (let j = 0; j < recordsOldOps.length; j++) {
+                let recordsOldOp = recordsOldOps[j]
+                let recordsOldOpDetail = this.__opParse(recordsOldOp)
+                if (recordsOldOpDetail.action === "read") {
                     /*  ...check if any of its OIDs match the write OIDs in the new scope  */
-                    let oldScopeOIDs = oldScope[oldScopeType][oldScopeOp]
-                    for (let k = 0; k < oldScopeOIDs.length; k++) {
-                        let oid = oldScopeOIDs[k]
-                        if (newScopeWriteOID[oid])
+                    let recordsOldOIDs = recordsOld[recordsOldType][recordsOldOp]
+                    for (let k = 0; k < recordsOldOIDs.length; k++) {
+                        let oid = recordsOldOIDs[k]
+                        if (recordsNewWriteOID[oid])
                             return true
                     }
                 }
@@ -113,24 +99,24 @@ export default class gtsEvaluation {
             new Scope:  delete  direct          one|many|all  */
 
         /*  for each new scope which writes...  */
-        let newScopeTypes = Object.keys(newScope)
-        for (let i = 0; i < newScopeTypes.length; i++) {
-            let newScopeType = newScopeTypes[i]
-            let newScopeOps = Object.keys(newScope[newScopeType])
-            for (let j = 0; j < newScopeOps.length; j++) {
-                let newScopeOp = newScopeOps[j]
-                let newScopeOpDetail = this.__opParse(newScopeOp)
-                if (newScopeOpDetail.action.match(/^(?:create|update|delete)$/)) {
+        let recordsNewTypes = Object.keys(recordsNew)
+        for (let i = 0; i < recordsNewTypes.length; i++) {
+            let recordsNewType = recordsNewTypes[i]
+            let recordsNewOps = Object.keys(recordsNew[recordsNewType])
+            for (let j = 0; j < recordsNewOps.length; j++) {
+                let recordsNewOp = recordsNewOps[j]
+                let recordsNewOpDetail = this.__opParse(recordsNewOp)
+                if (recordsNewOpDetail.action.match(/^(?:create|update|delete)$/)) {
                     /*  for each old scope which read...  */
-                    if (oldScope[newScopeType] !== undefined) {
-                        let oldScopeOps = Object.keys(oldScope[newScopeType])
-                        for (let l = 0; l < oldScopeOps.length; l++) {
-                            let oldScopeOp = oldScopeOps[l]
-                            let oldScopeOpDetail = this.__opParse(oldScopeOp)
-                            if (oldScopeOpDetail.action === "read") {
+                    if (recordsOld[recordsNewType] !== undefined) {
+                        let recordsOldOps = Object.keys(recordsOld[recordsNewType])
+                        for (let l = 0; l < recordsOldOps.length; l++) {
+                            let recordsOldOp = recordsOldOps[l]
+                            let recordsOldOpDetail = this.__opParse(recordsOldOp)
+                            if (recordsOldOpDetail.action === "read") {
                                 /*  check combinations which outdate old scope  */
-                                let newOp = newScopeOpDetail
-                                let oldOp = oldScopeOpDetail
+                                let newOp = recordsNewOpDetail
+                                let oldOp = recordsOldOpDetail
 
                                 /*  create:*:* --outdates--> read:*:(many|all)  */
                                 if (newOp.action === "create"
@@ -164,7 +150,8 @@ export default class gtsEvaluation {
         let cid = scope.connection !== null ? scope.connection.cid : "<none>"
 
         /*  determine whether any write operations exist in the scope  */
-        let hasWriteOps = this.scopeHasWriteOp(scope)
+        let hasWriteOps = this.scopeHasOp(scope.records, (op) =>
+            op.action.match(/^(?:create|update|delete)$/))
 
         /*  determine whether there is a subscription for the scope  */
         let hasSubscription = await this.keyval.get(`sid:${sid},cid:${cid}`)
