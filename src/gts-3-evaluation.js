@@ -51,10 +51,12 @@ export default class gtsEvaluation {
 
     /*  does a new scope outdate an old scope  */
     scopeOutdated (recordsNew, recordsOld) {
-        /*  ==== CASE 1 ====
-            "Is an old/previously read OID now written onto?"  */
 
-        /*  find all OIDs in new scope which write  */
+        /*  ==== CASE 1 ====
+
+            "Is an old/previously read OID now (directly) written onto?"  */
+
+        /*  find all OIDs in new scope records which write  */
         let recordsNewWriteOID = {}
         Object.keys(recordsNew).forEach((type) => {
             Object.keys(recordsNew[type]).forEach((op) => {
@@ -67,7 +69,7 @@ export default class gtsEvaluation {
             })
         })
 
-        /*  for each old scope which reads...  */
+        /*  for each old scope records which read, ...  */
         let recordsOldTypes = Object.keys(recordsOld)
         for (let i = 0; i < recordsOldTypes.length; i++) {
             let recordsOldType = recordsOldTypes[i]
@@ -88,8 +90,10 @@ export default class gtsEvaluation {
         }
 
         /*  ==== CASE 2 ====
-            "Has an old/previously read OID potentially had taken write results into account?"
-            For this we have to know that the valid operation combinations are:
+
+            "Has an old/previously read list of OID potentially had to take
+            write results into account?". For this we have to know that the
+            valid operation combinations are which can occur in practice:
 
                         ACTION  VIA             ONTO
                         ------- --------------- ------------
@@ -98,7 +102,7 @@ export default class gtsEvaluation {
             new Scope:  update  direct          one|many|all
             new Scope:  delete  direct          one|many|all  */
 
-        /*  for each new scope which writes...  */
+        /*  for each new scope records which write, ...  */
         let recordsNewTypes = Object.keys(recordsNew)
         for (let i = 0; i < recordsNewTypes.length; i++) {
             let recordsNewType = recordsNewTypes[i]
@@ -107,32 +111,34 @@ export default class gtsEvaluation {
                 let recordsNewOp = recordsNewOps[j]
                 let recordsNewOpDetail = this.__opParse(recordsNewOp)
                 if (recordsNewOpDetail.action.match(/^(?:create|update|delete)$/)) {
-                    /*  for each old scope which read...  */
-                    if (recordsOld[recordsNewType] !== undefined) {
-                        let recordsOldOps = Object.keys(recordsOld[recordsNewType])
-                        for (let l = 0; l < recordsOldOps.length; l++) {
-                            let recordsOldOp = recordsOldOps[l]
-                            let recordsOldOpDetail = this.__opParse(recordsOldOp)
-                            if (recordsOldOpDetail.action === "read") {
-                                /*  check combinations which outdate old scope  */
-                                let newOp = recordsNewOpDetail
-                                let oldOp = recordsOldOpDetail
 
-                                /*  create:*:* --outdates--> read:*:(many|all)  */
-                                if (newOp.action === "create"
-                                    && (oldOp.onto === "many" || oldOp.onto === "all"))
-                                    return true
+                    /*  for each old scope records which read, ...  */
+                    if (recordsOld[recordsNewType] === undefined)
+                        continue
+                    let recordsOldOps = Object.keys(recordsOld[recordsNewType])
+                    for (let l = 0; l < recordsOldOps.length; l++) {
+                        let recordsOldOp = recordsOldOps[l]
+                        let recordsOldOpDetail = this.__opParse(recordsOldOp)
+                        if (recordsOldOpDetail.action === "read") {
 
-                                /*  update:*:* --outdates--> read:*:(many|all)  */
-                                else if (newOp.action === "update"
-                                    && (oldOp.onto === "many" || oldOp.onto === "all"))
-                                    return true
+                            /*  check combinations which outdate old scope  */
+                            let newOp = recordsNewOpDetail
+                            let oldOp = recordsOldOpDetail
 
-                                /*  delete:*:* --outdates--> read:*:(many|all)  */
-                                else if (newOp.action === "delete"
-                                    && (oldOp.onto === "many" || oldOp.onto === "all"))
-                                    return true
-                            }
+                            /*  create:*:* --outdates--> read:*:(many|all)  */
+                            if (newOp.action === "create"
+                                && (oldOp.onto === "many" || oldOp.onto === "all"))
+                                return true
+
+                            /*  update:*:* --outdates--> read:*:(many|all)  */
+                            else if (newOp.action === "update"
+                                && (oldOp.onto === "many" || oldOp.onto === "all"))
+                                return true
+
+                            /*  delete:*:* --outdates--> read:*:(many|all)  */
+                            else if (newOp.action === "delete"
+                                && (oldOp.onto === "many" || oldOp.onto === "all"))
+                                return true
                         }
                     }
                 }
