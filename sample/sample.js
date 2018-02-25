@@ -24,7 +24,6 @@
 
 /* eslint no-console: off */
 
-import co                    from "co"
 import * as GraphQL          from "graphql"
 import * as GraphQLTools     from "graphql-tools"
 import GraphQLToolsTypes     from "graphql-tools-types"
@@ -38,6 +37,9 @@ let gts = new GraphQLToolsSubscribe({
 gts.open()
 let gtsConn = gts.connection("dummy", (sids) => {
     console.log("OUTDATED", sids)
+})
+gts.on("debug", (msg) => {
+    console.log("DEBUG", msg)
 })
 
 /*  define a GraphQL schema  */
@@ -193,18 +195,19 @@ let schema = GraphQLTools.makeExecutableSchema({
 })
 
 /*  helper function for performing GraphQL queries  */
-const makeQuery = (query, variables) => {
+const makeQuery = async (query, variables) => {
     console.log("----------------------------------------------------------------------")
     console.log("QUERY:\n" + query.replace(/^s+/, "").replace(/(?:\s|\n)+/g, " ").replace(/\s+$/, ""))
     let scope = gtsConn.scope(query)
     ctx.scope = scope
-    return GraphQL.graphql(schema, query, null, ctx, variables).then((result) => {
+    await GraphQL.graphql(schema, query, null, ctx, variables).then((result) => {
         scope.commit()
         console.log("RESULT: OK\n" + require("util").inspect(result, { depth: null }))
     }).catch((result) => {
         scope.reject()
         console.log("RESULT: ERROR:\n" + result)
     })
+    console.log("DUMP:\n" + (await gts.dump()))
 }
 
 /*  finally perform some GraphQL queries  */
