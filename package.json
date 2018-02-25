@@ -28,7 +28,6 @@
         "babel-runtime":                             "~6.26.0"
     },
     "devDependencies": {
-        "co":                                        "~4.6.0",
         "graphql":                                   "~0.13.1",
         "graphql-tools":                             "~2.21.0",
         "graphql-tools-types":                       "~1.1.13",
