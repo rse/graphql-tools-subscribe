@@ -208,14 +208,14 @@ const makeQuery = (query, variables) => {
 }
 
 /*  finally perform some GraphQL queries  */
-co(function * () {
-    yield (makeQuery(`
+(async function () {
+    await (makeQuery(`
         query {
             _Subscription { subscribe }
             ShoppingCard(id: "sc1") { id, items { id, title } }
         }
     `, {}))
-    yield (makeQuery(`
+    await (makeQuery(`
         mutation {
             i31: createItem(id: "i31", title: "Item 3.1") { id }
             i32: createItem(id: "i32", title: "Item 3.2") { id }
@@ -224,36 +224,36 @@ co(function * () {
             }
         }
     `, {}))
-    yield (makeQuery(`
+    await (makeQuery(`
         query {
             _Subscription { subscriptions }
         }
     `, {}))
-    yield (makeQuery(`
+    await (makeQuery(`
         mutation {
             updateItem(id: "i11", title: "Updated Title") {
                 id
             }
         }
     `, {}))
-    yield (makeQuery(`
+    await (makeQuery(`
         query {
             _Subscription { subscriptions }
         }
     `, {}))
-    yield (makeQuery(`
+    await (makeQuery(`
         query {
             _Subscription { subscribe }
             _Subscription { subscriptions }
             ShoppingCard(id: "sc1") { id, items { id, title } }
         }
     `, {}))
-    yield (makeQuery(`
+    await (makeQuery(`
         query {
             _Subscription { subscriptions }
         }
     `, {}))
-}).catch((err) => {
+})().catch((err) => {
     console.log("ERROR", err)
 })
 
