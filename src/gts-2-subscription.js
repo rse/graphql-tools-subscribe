@@ -67,6 +67,10 @@ export default class gtsSubscription {
             await this.keyval.put(`sid:${sid},cid:${cid}`, "subscribed")
             await this.keyval.release()
 
+            /*  drop an event about the subscription  */
+            ctx.scope.api.emit("scope-subscribe", { sid: sid, cid: cid })
+            ctx.scope.api.emit("debug", `scope-subscribe sid=${sid} cid=${cid}`)
+
             /*  return result  */
             return sid
         }
@@ -101,6 +105,10 @@ export default class gtsSubscription {
             await this.keyval.del(`cid:${cid},sid:${sid}`)
             await this.keyval.release()
 
+            /*  drop an event about the unsubscription  */
+            ctx.scope.api.emit("scope-unsubscribe", { sid: sid, cid: cid })
+            ctx.scope.api.emit("debug", `scope-unsubscribe sid=${sid} cid=${cid}`)
+
             /*  return no result  */
             return {}
         }
@@ -126,6 +134,10 @@ export default class gtsSubscription {
             let keys = await this.keyval.keys(`sid:*,cid:${cid}`)
             let sids = keys.map((key) => key.replace(/^sid:(.+?),cid:.+$/, "$1"))
             await this.keyval.release()
+
+            /*  drop an event about the subscriptions  */
+            ctx.scope.api.emit("scope-subscriptions", { cid: cid, sids: sids })
+            ctx.scope.api.emit("debug", `scope-subscriptions sids=${sids.join(",")} cid=${cid}`)
 
             /*  return result  */
             return sids
@@ -165,6 +177,10 @@ export default class gtsSubscription {
             await this.keyval.put(`sid:${sid},cid:${cid}`, "paused")
             await this.keyval.release()
 
+            /*  drop an event about the pausing  */
+            ctx.scope.api.emit("scope-pause", { sid: sid, cid: cid })
+            ctx.scope.api.emit("debug", `scope-pause sid=${sid} cid=${cid}`)
+
             /*  return no result  */
             return {}
         }
@@ -202,6 +218,10 @@ export default class gtsSubscription {
             }
             await this.keyval.put(`sid:${sid},cid:${cid}`, "subscribed")
             await this.keyval.release()
+
+            /*  drop an event about the resuming  */
+            ctx.scope.api.emit("scope-resume", { sid: sid, cid: cid })
+            ctx.scope.api.emit("debug", `scope-resume sid=${sid} cid=${cid}`)
 
             /*  return no result  */
             return {}

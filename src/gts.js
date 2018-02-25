@@ -24,6 +24,7 @@
 
 /*  external dependencies  */
 import aggregation             from "aggregation/es6"
+import EventEmitter            from "eventemitter3"
 import PubSub                  from "ipc-pubsub"
 import KeyVal                  from "ipc-keyval"
 
@@ -48,6 +49,21 @@ class GraphQLToolsSubscribe extends aggregation(
         this.keyval = new KeyVal(this.options.keyval)
         this.pubsub = new PubSub(this.options.pubsub)
         this.subscription = null
+        this.emitter = new EventEmitter()
+    }
+
+    /*  provide event listening  */
+    on (name, handler) {
+        this.emitter.on(name, handler)
+        return () => {
+            this.emitter.removeListener(name, handler)
+        }
+    }
+
+    /*  provide event emitting  */
+    emit (name, ...args) {
+        this.emitter.emit(name, ...args)
+        return this
     }
 
     /*  open service  */

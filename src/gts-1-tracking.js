@@ -27,14 +27,16 @@ import UUID         from "pure-uuid"
 import ObjectHash   from "node-object-hash"
 import EventEmitter from "eventemitter3"
 
+/*  create a global instance of the object hasher  */
 const ObjectHasher = ObjectHash()
 
 /*  the scope class  */
 class Scope extends EventEmitter {
-    constructor (connection, query, variables) {
+    constructor (api, connection, query, variables) {
         super()
 
-        /*  remember connection  */
+        /*  remember API and connection  */
+        this.api        = api
         this.connection = connection
 
         /*  generate unique subscription id from query and variables */
@@ -44,6 +46,9 @@ class Scope extends EventEmitter {
 
         /*  initialize recording  */
         this.records = {}
+        this.api.emit("scope-create", { sid: this.sid, query, variables })
+        this.api.emit("debug", `scope-create sid=${this.sid} query=${JSON.stringify(query)} ` +
+            `variables=${JSON.stringify(variables)}`)
     }
 
     /*  record an access operation  */
@@ -64,19 +69,37 @@ class Scope extends EventEmitter {
             this.records[type] = {}
         if (this.records[type][op] === undefined)
             this.records[type][op] = []
-        this.records[type][op].push(oid)
+        if (this.records[type][op].indexOf(oid) < 0)
+            this.records[type][op].push(oid)
+        this.api.emit("scope-record", { sid: this.sid, type, op, oid })
+        this.api.emit("debug", `scope-record sid=${this.sid} type=${type} op=${op} oid=${oid}`)
     }
 
     /*  pass-through operations to connection  */
-    commit  () { this.emit("commit",  this) }
-    reject  () { this.emit("reject",  this) }
-    destroy () { this.emit("destroy", this) }
+    commit  () {
+        this.emit("commit",  this)
+        this.api.emit("scope-commit", { sid: this.sid })
+        this.api.emit("debug", `scope-commit sid=${this.sid}`)
+    }
+    reject  () {
+        this.emit("reject",  this)
+        this.api.emit("scope-reject", { sid: this.sid })
+        this.api.emit("debug", `scope-reject sid=${this.sid}`)
+    }
+    destroy () {
+        this.emit("destroy", this)
+        this.api.emit("scope-destroy", { sid: this.sid })
+        this.api.emit("debug", `scope-destroy sid=${this.sid}`)
+    }
 }
 
 /*  the connection class  */
 class Connection extends EventEmitter {
-    constructor (cid, notify) {
+    constructor (api, cid, notify) {
         super()
+
+        /*  remember api  */
+        this.api = api
 
         /*  remember connection id and client notification method  */
         this.cid    = cid
@@ -84,11 +107,13 @@ class Connection extends EventEmitter {
 
         /*  initialize scopes set  */
         this.scopes = new Set()
+        this.api.emit("connection-create", { cid: this.cid })
+        this.api.emit("debug", `connection-create cid=${this.cid}`)
     }
 
     /*  create a new scope for the connection  */
     scope (query, variables) {
-        const scope = new Scope(this, query, variables)
+        const scope = new Scope(this.api, this, query, variables)
         this.scopes.add(scope)
         scope.on("destroy", () => {
             this.scopes.delete(scope)
@@ -109,6 +134,8 @@ class Connection extends EventEmitter {
             scope.destroy()
         })
         this.emit("destroy", this)
+        this.api.emit("connection-destroy", { cid: this.cid })
+        this.api.emit("debug", `connection-destroy cid=${this.cid}`)
     }
 }
 
@@ -120,7 +147,7 @@ export default class gtsTracking {
 
     /*  create new connection  */
     connection (cid, notify) {
-        const connection = new Connection(cid, notify)
+        const connection = new Connection(this, cid, notify)
         this.connections.add(connection)
         connection.on("destroy", () => {
             this.connections.delete(connection)
@@ -136,7 +163,7 @@ export default class gtsTracking {
 
     /*  record internal scope (without any connections)  */
     scopeRecord (...args) {
-        let scope = new Scope(null, "<internal>", {})
+        let scope = new Scope(this, null, "<internal>", {})
         scope.record(...args)
         this.scopeProcess(scope)
     }

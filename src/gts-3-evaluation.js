@@ -63,7 +63,7 @@ export default class gtsEvaluation {
                 let opDetail = this.__opParse(op)
                 if (opDetail.action.match(/^(?:update|delete)$/)) {
                     recordsNew[type][op].forEach((oid) => {
-                        recordsNewWriteOID[oid] = true
+                        recordsNewWriteOID[oid] = op
                     })
                 }
             })
@@ -82,8 +82,21 @@ export default class gtsEvaluation {
                     let recordsOldOIDs = recordsOld[recordsOldType][recordsOldOp]
                     for (let k = 0; k < recordsOldOIDs.length; k++) {
                         let oid = recordsOldOIDs[k]
-                        if (recordsNewWriteOID[oid])
+                        if (recordsNewWriteOID[oid]) {
+                            this.emit("scope-outdated-direct", {
+                                type:    recordsOldType,
+                                opWrite: recordsNewWriteOID[oid],
+                                opRead:  recordsOldOp,
+                                oid:     oid
+                            })
+                            this.emit("debug", "scope-outdated-direct " +
+                                `type=${recordsOldType} ` +
+                                `opWrite=${recordsNewWriteOID[oid]} ` +
+                                `opRead=${recordsOldOp} ` +
+                                `oid=${oid}`
+                            )
                             return true
+                        }
                     }
                 }
             }
@@ -100,7 +113,10 @@ export default class gtsEvaluation {
             old Scope:  read    direct|relation one|many|all
             new Scope:  create  direct          one
             new Scope:  update  direct          one|many|all
-            new Scope:  delete  direct          one|many|all  */
+            new Scope:  delete  direct          one|many|all
+
+            So, we have to take into account:
+            (create|update|delete):*:* --outdates--> read:*:(many|all)  */
 
         /*  for each new scope records which write, ...  */
         let recordsNewTypes = Object.keys(recordsNew)
@@ -121,24 +137,21 @@ export default class gtsEvaluation {
                         let recordsOldOpDetail = this.__opParse(recordsOldOp)
                         if (recordsOldOpDetail.action === "read") {
 
-                            /*  check combinations which outdate old scope  */
-                            let newOp = recordsNewOpDetail
-                            let oldOp = recordsOldOpDetail
-
-                            /*  create:*:* --outdates--> read:*:(many|all)  */
-                            if (newOp.action === "create"
-                                && (oldOp.onto === "many" || oldOp.onto === "all"))
+                            /*  check for outdate situation  */
+                            if (   recordsOldOpDetail.onto === "many"
+                                || recordsOldOpDetail.onto === "all" ) {
+                                this.emit("scope-outdated-indirect", {
+                                    type:    recordsNewType,
+                                    opWrite: recordsNewOp,
+                                    opRead:  recordsOldOp
+                                })
+                                this.emit("debug", "scope-outdated-indirect " +
+                                    `type=${recordsNewType} ` +
+                                    `opWrite=${recordsNewOp} ` +
+                                    `opRead=${recordsOldOp}`
+                                )
                                 return true
-
-                            /*  update:*:* --outdates--> read:*:(many|all)  */
-                            else if (newOp.action === "update"
-                                && (oldOp.onto === "many" || oldOp.onto === "all"))
-                                return true
-
-                            /*  delete:*:* --outdates--> read:*:(many|all)  */
-                            else if (newOp.action === "delete"
-                                && (oldOp.onto === "many" || oldOp.onto === "all"))
-                                return true
+                            }
                         }
                     }
                 }
@@ -209,6 +222,53 @@ export default class gtsEvaluation {
             if (outdated.length > 0)
                 conn.notify(outdated)
         })
+    }
+
+    /*  dump current information  */
+    async dump () {
+        /*  determine information in store  */
+        await this.keyval.acquire()
+        let info = { sids: {} }
+        let keys = await this.keyval.keys("sid:*,cid:*")
+        keys.map((key) => {
+            let sid = key.replace(/^sid:(.+?),cid:.+?$/, "$1")
+            let cid = key.replace(/^sid:.+?,cid:(.+?)$/, "$1")
+            if (info.sids[sid] === undefined)
+                info.sids[sid] = { cids: [], records: [] }
+            info.sids[sid].cids.push(cid)
+        })
+        keys = await this.keyval.keys("sid:*,rec")
+        let sids = keys.map((key) => key.replace(/^sid:(.+?),rec$/, "$1"))
+        await Promise.each(sids, async (sid) => {
+            let records = await this.keyval.get(`sid:${sid},rec`)
+            info.sids[sid].records.push(records)
+        })
+        await this.keyval.release()
+
+        /*  dump information  */
+        let dump = ""
+        Object.keys(info.sids).forEach((sid) => {
+            dump += `Scope { sid: ${sid} }\n`
+            info.sids[sid].cids.forEach((cid) => {
+                dump += `    Connection { cid: ${cid} }\n`
+            })
+            info.sids[sid].records.forEach((record) => {
+                let types = Object.keys(record)
+                for (let i = 0; i < types.length; i++) {
+                    let type = types[i]
+                    let ops = Object.keys(record[type])
+                    for (let j = 0; j < ops.length; j++) {
+                        let op = ops[j]
+                        let oids = record[type][op]
+                        for (let k = 0; k < oids.length; k++) {
+                            let oid = oids[k]
+                            dump += `    Record { type: ${type}, op: ${op}, oid: ${oid} }\n`
+                        }
+                    }
+                }
+            })
+        })
+        return dump
     }
 
     /*  destroy a scope  */
