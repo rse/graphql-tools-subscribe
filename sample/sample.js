@@ -209,13 +209,13 @@ const makeQuery = (query, variables) => {
 
 /*  finally perform some GraphQL queries  */
 (async function () {
-    await (makeQuery(`
+    await makeQuery(`
         query {
             _Subscription { subscribe }
             ShoppingCard(id: "sc1") { id, items { id, title } }
         }
-    `, {}))
-    await (makeQuery(`
+    `, {})
+    await makeQuery(`
         mutation {
             i31: createItem(id: "i31", title: "Item 3.1") { id }
             i32: createItem(id: "i32", title: "Item 3.2") { id }
@@ -223,36 +223,36 @@ const makeQuery = (query, variables) => {
                 id, items { id, title }
             }
         }
-    `, {}))
-    await (makeQuery(`
+    `, {})
+    await makeQuery(`
         query {
             _Subscription { subscriptions }
         }
-    `, {}))
-    await (makeQuery(`
+    `, {})
+    await makeQuery(`
         mutation {
             updateItem(id: "i11", title: "Updated Title") {
                 id
             }
         }
-    `, {}))
-    await (makeQuery(`
+    `, {})
+    await makeQuery(`
         query {
             _Subscription { subscriptions }
         }
-    `, {}))
-    await (makeQuery(`
+    `, {})
+    await makeQuery(`
         query {
             _Subscription { subscribe }
             _Subscription { subscriptions }
             ShoppingCard(id: "sc1") { id, items { id, title } }
         }
-    `, {}))
-    await (makeQuery(`
+    `, {})
+    await makeQuery(`
         query {
             _Subscription { subscriptions }
         }
-    `, {}))
+    `, {})
 })().catch((err) => {
     console.log("ERROR", err)
 })
