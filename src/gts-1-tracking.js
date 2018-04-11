@@ -32,10 +32,11 @@ const ObjectHasher = ObjectHash()
 
 /*  the scope class  */
 class Scope extends EventEmitter {
-    constructor (api, connection, query, variables) {
+    constructor (api, connection, query, variables, silent = false) {
         super()
 
         /*  remember API and connection  */
+        this.silent     = silent
         this.api        = api
         this.connection = connection
 
@@ -47,8 +48,9 @@ class Scope extends EventEmitter {
         /*  initialize recording  */
         this.records = {}
         this.api.emit("scope-create", { sid: this.sid, query, variables })
-        this.api.emit("debug", `scope-create sid=${this.sid} query=${JSON.stringify(query)} ` +
-            `variables=${JSON.stringify(variables)}`)
+        if (!this.silent)
+            this.api.emit("debug", `scope-create sid=${this.sid} query=${JSON.stringify(query)} ` +
+                `variables=${JSON.stringify(variables)}`)
     }
 
     /*  record an access operation  */
@@ -72,24 +74,28 @@ class Scope extends EventEmitter {
         if (this.records[type][op].indexOf(oid) < 0)
             this.records[type][op].push(oid)
         this.api.emit("scope-record", { sid: this.sid, type, op, oid })
-        this.api.emit("debug", `scope-record sid=${this.sid} type=${type} op=${op} oid=${oid}`)
+        if (!this.silent)
+            this.api.emit("debug", `scope-record sid=${this.sid} type=${type} op=${op} oid=${oid}`)
     }
 
     /*  pass-through operations to connection  */
     commit  () {
         this.emit("commit",  this)
         this.api.emit("scope-commit", { sid: this.sid })
-        this.api.emit("debug", `scope-commit sid=${this.sid}`)
+        if (!this.silent)
+            this.api.emit("debug", `scope-commit sid=${this.sid}`)
     }
     reject  () {
         this.emit("reject",  this)
         this.api.emit("scope-reject", { sid: this.sid })
-        this.api.emit("debug", `scope-reject sid=${this.sid}`)
+        if (!this.silent)
+            this.api.emit("debug", `scope-reject sid=${this.sid}`)
     }
     destroy () {
         this.emit("destroy", this)
         this.api.emit("scope-destroy", { sid: this.sid })
-        this.api.emit("debug", `scope-destroy sid=${this.sid}`)
+        if (!this.silent)
+            this.api.emit("debug", `scope-destroy sid=${this.sid}`)
     }
 }
 
@@ -108,7 +114,8 @@ class Connection extends EventEmitter {
         /*  initialize scopes set  */
         this.scopes = new Set()
         this.api.emit("connection-create", { cid: this.cid })
-        this.api.emit("debug", `connection-create cid=${this.cid}`)
+        if (!this.silent)
+            this.api.emit("debug", `connection-create cid=${this.cid}`)
     }
 
     /*  create a new scope for the connection  */
@@ -135,7 +142,8 @@ class Connection extends EventEmitter {
         })
         this.emit("destroy", this)
         this.api.emit("connection-destroy", { cid: this.cid })
-        this.api.emit("debug", `connection-destroy cid=${this.cid}`)
+        if (!this.silent)
+            this.api.emit("debug", `connection-destroy cid=${this.cid}`)
     }
 }
 
@@ -163,7 +171,7 @@ export default class gtsTracking {
 
     /*  record internal scope (without any connections)  */
     scopeRecord (...args) {
-        let scope = new Scope(this, null, "<internal>", {})
+        let scope = new Scope(this, null, "<internal>", {}, true)
         scope.record(...args)
         this.scopeProcess(scope)
     }
