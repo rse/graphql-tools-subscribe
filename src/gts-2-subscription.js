@@ -102,7 +102,7 @@ export default class gtsSubscription {
                 await this.keyval.release()
                 throw new Error(`no such subscription "${sid}"`)
             }
-            await this.keyval.del(`cid:${cid},sid:${sid}`)
+            await this.keyval.del(`sid:${sid},cid:${cid}`)
             await this.keyval.release()
 
             /*  drop an event about the unsubscription  */
@@ -136,7 +136,7 @@ export default class gtsSubscription {
             await this.keyval.release()
 
             /*  drop an event about the subscriptions  */
-            ctx.scope.api.emit("scope-subscriptions", { cid: cid, sids: sids })
+            ctx.scope.api.emit("scope-subscriptions", { sids: sids, cid: cid })
             ctx.scope.api.emit("debug", `scope-subscriptions sids=${sids.join(",")} cid=${cid}`)
 
             /*  return result  */
