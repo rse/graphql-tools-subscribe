@@ -205,6 +205,9 @@ export default class gtsEvaluation {
                     outdatedSids.push(otherSid)
             })
             await this.keyval.release()
+
+            /*  externally publish ids of outdated queries to all instances
+                (comes in on all instances via scopeOutdatedEvent below)  */
             if (outdatedSids.length > 0)
                 this.pubsub.publish("outdated", outdatedSids)
         }
