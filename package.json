@@ -23,8 +23,8 @@
         "pure-uuid":                                 "1.5.2",
         "capitalize":                                "1.0.0",
         "node-object-hash":                          "1.3.0",
-        "ipc-keyval":                                "1.0.3",
-        "ipc-pubsub":                                "1.0.3",
+        "ipc-keyval":                                "1.0.4",
+        "ipc-pubsub":                                "1.0.4",
         "babel-runtime":                             "6.26.0"
     },
     "devDependencies": {
