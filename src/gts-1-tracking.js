@@ -42,7 +42,7 @@ class Scope extends EventEmitter {
 
         /*  generate unique subscription id from query and variables */
         const data = ObjectHasher.sort({ query, variables })
-        const ns = new UUID(5, "ns:URL", "http://engelschall.com/ns/graphql-tools-subscribe")
+        const ns = new UUID(5, "ns:URL", "http://engelschall.com/ns/graphql-query")
         this.sid = (new UUID(5, ns, data)).format()
 
         /*  initialize recording  */
