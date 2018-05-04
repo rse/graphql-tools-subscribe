@@ -122,15 +122,17 @@ class Connection extends EventEmitter {
     scope (query, variables) {
         const scope = new Scope(this.api, this, query, variables)
         this.scopes.add(scope)
-        scope.on("destroy", () => {
-            this.scopes.delete(scope)
-            this.emit("scopeDestroy", scope)
-        })
         scope.on("commit", () => {
             this.emit("scopeProcess", scope)
+            /*  keep the scope attached to the connection and destroy
+                it only on unsubscription or destroying the connection  */
         })
         scope.on("reject", () => {
             scope.destroy()
+        })
+        scope.on("destroy", () => {
+            this.scopes.delete(scope)
+            this.emit("scopeDestroy", scope)
         })
         return scope
     }
