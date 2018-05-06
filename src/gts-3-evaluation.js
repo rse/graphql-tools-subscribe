@@ -166,7 +166,7 @@ export default class gtsEvaluation {
     async scopeProcess (scope) {
         /*  determine parameters  */
         let sid = scope.sid
-        let cid = scope.connection !== null ? scope.connection.cid : "<none>"
+        let cid = scope.connection !== null ? scope.connection.cid : `${this.uuid}:none`
 
         /*  determine whether any write operations exist in the scope records  */
         let hasWriteOps = this.__recordsContainOp(scope.records, (op) =>

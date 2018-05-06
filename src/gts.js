@@ -27,6 +27,7 @@ import aggregation             from "aggregation/es6"
 import EventEmitter            from "eventemitter3"
 import PubSub                  from "ipc-pubsub"
 import KeyVal                  from "ipc-keyval"
+import UUID                    from "pure-uuid"
 
 /*  internal dependencies  */
 import gtsTracking             from "./gts-1-tracking"
@@ -50,6 +51,7 @@ class GraphQLToolsSubscribe extends aggregation(
         this.pubsub = new PubSub(this.options.pubsub)
         this.subscription = null
         this.emitter = new EventEmitter()
+        this.uuid = (new UUID(1)).format()
     }
 
     /*  provide event listening  */
