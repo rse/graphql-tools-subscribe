@@ -87,7 +87,7 @@ class GraphQLToolsSubscribe extends aggregation(
 
     /*  version information  */
     version () {
-        return { major: 1, minor: 0, micro: 7, date: 20180503 }
+        return { major: 1, minor: 1, micro: 1, date: 20180506 }
     }
 }
 
