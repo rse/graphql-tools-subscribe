@@ -31,13 +31,13 @@ import UUID                    from "pure-uuid"
 
 /*  internal dependencies  */
 import gtsTracking             from "./gts-1-tracking"
-import gtsSubscription         from "./gts-2-subscription"
+import gtsResolver             from "./gts-2-resolver"
 import gtsEvaluation           from "./gts-3-evaluation"
 
 /*  the API class  */
 class GraphQLToolsSubscribe extends aggregation(
     gtsTracking,
-    gtsSubscription,
+    gtsResolver,
     gtsEvaluation
 ) {
     /*  the class constructor  */

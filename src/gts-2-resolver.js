@@ -23,7 +23,7 @@
 */
 
 /*  the API mixin class  */
-export default class gtsSubscription {
+export default class gtsResolver {
     /*  the factory methods for resolving "Subscription" root type  */
     schemaSubscription () {
         return "" +
