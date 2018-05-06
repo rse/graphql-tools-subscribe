@@ -80,18 +80,18 @@ declare module "graphql-tools-subscribe" {
         public scopeRecord(type: string, oid: string, action: string, via: string, onto: string): void
 
         /*  Generate the GraphQL schema entries and resolver functions  */
-        public schemaSubscription (): string
-        public resolverSubscription (): Resolver
-        public schemaSubscribe (): string
-        public resolverSubscribe (): Resolver
-        public schemaUnsubscribe (): string
-        public resolverUnsubscribe (): Resolver
-        public schemaSubscriptions (): string
-        public resolverSubscriptions (): Resolver
-        public schemaPause (): string
-        public resolverPause (): Resolver
-        public schemaResume (): string
-        public resolverResume (): Resolver
+        public schemaSubscription(): string
+        public resolverSubscription(): Resolver
+        public schemaSubscribe(): string
+        public resolverSubscribe(): Resolver
+        public schemaUnsubscribe(): string
+        public resolverUnsubscribe(): Resolver
+        public schemaSubscriptions(): string
+        public resolverSubscriptions(): Resolver
+        public schemaPause(): string
+        public resolverPause(): Resolver
+        public schemaResume(): string
+        public resolverResume(): Resolver
 
         /*  Dump a textual description of the current connection/subscription/record information  */
         public dump(): string
@@ -101,18 +101,18 @@ declare module "graphql-tools-subscribe" {
     type Resolver = (obj: any, args: any, ctx: any, info: any) => any
 
     /*  The logical connection  */
-    class Connection {
+    interface Connection {
         /*  Create a new tracking scope and attach it to the connection.
             Notice: it is required that you pass-through this scope to all
             GraphQL resolvers in the context object under field `scope`!  */
-        public scope (query: string, variables?: object): Scope
+        public scope(query: string, variables?: object): Scope
 
         /*  Destroy connection (and all its attached scopes)  */
-        public destroy (): void
+        public destroy(): void
     }
 
     /*  The tracking scope  */
-    class Scope {
+    interface Scope {
         /*  Record a data mode access.
             The **type** is a domain-specific type of the object the access happened onto.
             The **oid** is a domain-specific identifier of the object the access happended onto.
@@ -127,13 +127,13 @@ declare module "graphql-tools-subscribe" {
         public record(type: string, oid: string, action: string, via: string, onto: string): void
 
         /*  Commit scope  */
-        public commit (): void
+        public commit(): void
 
         /*  Reject scope  */
-        public reject (): void
+        public reject(): void
 
         /*  Destroy scope  */
-        public destroy (): void
+        public destroy(): void
     }
 
     const gts: GTS
