@@ -86,11 +86,6 @@ class GraphQLToolsSubscribe extends aggregation(
         await this.pubsub.close()
         return this
     }
-
-    /*  version information  */
-    version () {
-        return { major: 1, minor: 1, micro: 1, date: 20180506 }
-    }
 }
 
 /*  export the traditional way for interoperability reasons
