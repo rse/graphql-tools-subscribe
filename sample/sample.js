@@ -198,7 +198,7 @@ let schema = GraphQLTools.makeExecutableSchema({
 const makeQuery = async (query, variables) => {
     console.log("----------------------------------------------------------------------")
     console.log("QUERY:\n" + query.replace(/^s+/, "").replace(/(?:\s|\n)+/g, " ").replace(/\s+$/, ""))
-    let scope = gtsConn.scope(query)
+    let scope = gtsConn.scope(query, variables)
     ctx.scope = scope
     await GraphQL.graphql(schema, query, null, ctx, variables).then((result) => {
         scope.commit()
