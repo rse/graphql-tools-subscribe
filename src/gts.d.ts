@@ -77,7 +77,7 @@ declare module "graphql-tools-subscribe" {
         /*  Create a new internal scope without a corresponding connection and record a change.
             Use this for application internal (non-client triggered) GraphQL mutations.
             The parameters are the same as for `Scope#record()`. */
-        public scopeRecord(type: string, oid: string, action: string, via: string, onto: string): void
+        public record(type: string, oid: string, action: string, via: string, onto: string): void
 
         /*  Generate the GraphQL schema entries and resolver functions  */
         public schemaSubscription(): string

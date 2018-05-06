@@ -175,7 +175,7 @@ export default class gtsTracking {
     }
 
     /*  record internal scope (without any connections)  */
-    scopeRecord (...args) {
+    record (...args) {
         let scope = new Scope(this, null, "<internal>", {}, true)
         scope.record(...args)
         this.__scopeProcess(scope)
