@@ -224,6 +224,10 @@ export default class gtsResolver {
                     throw new Error("resume: failed to resume GraphQL query subscription, " +
                         `because it is in state "${scope.state}" (but expected "paused")`)
                 scope.state = "subscribed"
+                if (scope.outdated) {
+                    scope.outdated = false
+                    setTimeout(() => this.__scopeOutdatedEvent([ scope.id ]), 0)
+                }
                 found = true
             })
             if (!found)

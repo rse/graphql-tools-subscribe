@@ -42,6 +42,7 @@ class Scope extends EventEmitter {
 
         /*  the state of the scope  */
         this.state      = "unsubscribed"
+        this.outdated   = false
 
         /*  generate unique subscription id from query and variables */
         const data = ObjectHasher.sort({ query, variables })

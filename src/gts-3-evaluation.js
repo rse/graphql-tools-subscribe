@@ -220,8 +220,12 @@ export default class gtsEvaluation {
         this.connections.forEach((conn) => {
             let outdated = {}
             conn.scopes.forEach((scope) => {
-                if (scope.state === "subscribed" && sids.indexOf(scope.sid) >= 0)
-                    outdated[scope.sid] = true
+                if (sids.indexOf(scope.sid) >= 0) {
+                    if (scope.state === "subscribed")
+                        outdated[scope.sid] = true
+                    else if (scope.state === "paused")
+                        scope.outdated = true
+                }
             })
             outdated = Object.keys(outdated)
             if (outdated.length > 0) {
