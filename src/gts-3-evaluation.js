@@ -231,6 +231,22 @@ export default class gtsEvaluation {
         })
     }
 
+    /*  destroy a scope  */
+    async __scopeDestroy (scope) {
+        /*  determine parameters  */
+        let sid = scope.sid
+        let cid = scope.connection !== null ? scope.connection.cid : `${this.uuid}:none`
+
+        /*  scope records with no more corresponding subscriptions are deleted  */
+        await this.keyval.acquire()
+        await this.keyval.del(`sid:${sid},cid:${cid}`)
+        let keys = await this.keyval.keys(`sid:${sid},cid:*`)
+        if (keys.length === 0)
+            await this.keyval.del(`sid:${sid},rec`)
+        await this.keyval.release()
+        this.emit("debug", `scope-store-delete sid=${sid} cid=${cid}`)
+    }
+
     /*  dump current information  */
     async dump () {
         /*  determine information in store  */
@@ -276,22 +292,6 @@ export default class gtsEvaluation {
             })
         })
         return dump
-    }
-
-    /*  destroy a scope  */
-    async __scopeDestroy (scope) {
-        /*  determine parameters  */
-        let sid = scope.sid
-        let cid = scope.connection !== null ? scope.connection.cid : `${this.uuid}:none`
-
-        /*  scope records with no more corresponding subscriptions are deleted  */
-        await this.keyval.acquire()
-        await this.keyval.del(`sid:${sid},cid:${cid}`)
-        let keys = await this.keyval.keys(`sid:${sid},cid:*`)
-        if (keys.length === 0)
-            await this.keyval.del(`sid:${sid},rec`)
-        await this.keyval.release()
-        this.emit("debug", `scope-store-delete sid=${sid} cid=${cid}`)
     }
 }
 
