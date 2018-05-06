@@ -50,7 +50,7 @@ export default class gtsEvaluation {
     }
 
     /*  does a new scope outdate an old scope  */
-    scopeOutdated (recordsNew, recordsOld) {
+    __scopeOutdated (recordsNew, recordsOld) {
 
         /*  ==== CASE 1 ====
 
@@ -163,7 +163,7 @@ export default class gtsEvaluation {
     }
 
     /*  process a committed scope  */
-    async scopeProcess (scope) {
+    async __scopeProcess (scope) {
         /*  determine parameters  */
         let sid = scope.sid
         let cid = scope.connection !== null ? scope.connection.cid : `${this.uuid}:none`
@@ -200,13 +200,13 @@ export default class gtsEvaluation {
             let outdatedSids = []
             await Bluebird.each(sids, async (otherSid) => {
                 let records = await this.keyval.get(`sid:${otherSid},rec`)
-                if (this.scopeOutdated(scope.records, records))
+                if (this.__scopeOutdated(scope.records, records))
                     outdatedSids.push(otherSid)
             })
             await this.keyval.release()
 
             /*  externally publish ids of outdated queries to all instances
-                (comes in on all instances via scopeOutdatedEvent below)  */
+                (comes in on all instances via __scopeOutdatedEvent below)  */
             if (outdatedSids.length > 0) {
                 this.emit("debug", `scope-outdated-send sids=${outdatedSids}`)
                 this.pubsub.publish("outdated", outdatedSids)
@@ -215,7 +215,7 @@ export default class gtsEvaluation {
     }
 
     /*  process an outdated event  */
-    scopeOutdatedEvent (sids) {
+    __scopeOutdatedEvent (sids) {
         this.emit("debug", `scope-outdated-receive sids=${sids.join(",")}`)
         this.connections.forEach((conn) => {
             let outdated = {}
@@ -279,7 +279,7 @@ export default class gtsEvaluation {
     }
 
     /*  destroy a scope  */
-    async scopeDestroy (scope) {
+    async __scopeDestroy (scope) {
         /*  determine parameters  */
         let sid = scope.sid
         let cid = scope.connection !== null ? scope.connection.cid : `${this.uuid}:none`

@@ -166,10 +166,10 @@ export default class gtsTracking {
             this.connections.delete(connection)
         })
         connection.on("scopeDestroy", (scope) => {
-            this.scopeDestroy(scope)
+            this.__scopeDestroy(scope)
         })
         connection.on("scopeProcess", (scope) => {
-            this.scopeProcess(scope)
+            this.__scopeProcess(scope)
         })
         return connection
     }
@@ -178,7 +178,7 @@ export default class gtsTracking {
     scopeRecord (...args) {
         let scope = new Scope(this, null, "<internal>", {}, true)
         scope.record(...args)
-        this.scopeProcess(scope)
+        this.__scopeProcess(scope)
     }
 }
 

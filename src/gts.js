@@ -73,7 +73,7 @@ class GraphQLToolsSubscribe extends aggregation(
         await this.keyval.open()
         await this.pubsub.open()
         this.subscription = await this.pubsub.subscribe("outdated", (sids) => {
-            this.scopeOutdatedEvent(sids)
+            this.__scopeOutdatedEvent(sids)
         })
     }
 
