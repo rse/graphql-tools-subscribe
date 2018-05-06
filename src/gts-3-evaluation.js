@@ -23,7 +23,7 @@
 */
 
 /*  external dependencies  */
-import Promise from "bluebird"
+import Bluebird from "bluebird"
 
 /*  the API mixin class  */
 export default class gtsEvaluation {
@@ -198,7 +198,7 @@ export default class gtsEvaluation {
             let keys = await this.keyval.keys("sid:*,rec")
             let sids = keys.map((key) => key.replace(/^sid:(.+?),rec$/, "$1"))
             let outdatedSids = []
-            await Promise.each(sids, async (otherSid) => {
+            await Bluebird.each(sids, async (otherSid) => {
                 let records = await this.keyval.get(`sid:${otherSid},rec`)
                 if (this.scopeOutdated(scope.records, records))
                     outdatedSids.push(otherSid)
@@ -246,7 +246,7 @@ export default class gtsEvaluation {
         })
         keys = await this.keyval.keys("sid:*,rec")
         let sids = keys.map((key) => key.replace(/^sid:(.+?),rec$/, "$1"))
-        await Promise.each(sids, async (sid) => {
+        await Bluebird.each(sids, async (sid) => {
             let records = await this.keyval.get(`sid:${sid},rec`)
             info.sids[sid].records.push(records)
         })
