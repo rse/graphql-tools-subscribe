@@ -25,6 +25,7 @@
 /* global module: true */
 module.exports = function (grunt) {
     grunt.loadNpmTasks("grunt-eslint")
+    grunt.loadNpmTasks("grunt-tslint")
     grunt.loadNpmTasks("grunt-babel")
     grunt.loadNpmTasks("grunt-mocha-test")
     grunt.loadNpmTasks("grunt-contrib-clean")
@@ -35,6 +36,14 @@ module.exports = function (grunt) {
                 configFile: "eslint.yaml"
             },
             "graphql-tools-subscribe": [ "src/**/*.js", "sample/**/*.js" ]
+        },
+        tslint: {
+            "graphql-tools-subscribe": {
+                options: {
+                    configuration: "tslint.json"
+                },
+                src: "./src/gts.d.ts"
+            }
         },
         babel: {
             "graphql-tools-subscribe": {
@@ -89,7 +98,7 @@ module.exports = function (grunt) {
             }
         }
     })
-    grunt.registerTask("default", [ "eslint", "babel" ])
+    grunt.registerTask("default", [ "eslint", "tslint", "babel" ])
     grunt.registerTask("test", [ "mochaTest" ])
     grunt.registerTask("dev", [ "default", "watch" ])
 }

@@ -33,7 +33,11 @@ $ npm install graphql-tools-subscribe
 Application Programming Interface (API)
 ---------------------------------------
 
-[STILL TO BE DOCUMENTED, SEE SOURCE CODE AND USAGE EXAMPLE BELOW IN THE MEANTIME]
+```js
+import GTS from "graphql-tools-subscribe"
+```
+
+See the [TypeScript type definition of the GraphQL-Tools-Subscribe API](src/gts.d.ts) for details.
 
 Usage Example
 -------------
