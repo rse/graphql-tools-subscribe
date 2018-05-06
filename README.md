@@ -33,16 +33,96 @@ $ npm install graphql-tools-subscribe
 Application Programming Interface (API)
 ---------------------------------------
 
-```js
-import GTS from "graphql-tools-subscribe"
-```
-
 See the [TypeScript type definition of the GraphQL-Tools-Subscribe API](src/gts.d.ts) for details.
 
 Usage Example
 -------------
 
-See [sample script](sample/sample.js)
+```js
+import GTS from "graphql-tools-subscribe"
+```
+
+```js
+let gts = new GTS({ pubsub: "spm", keyval: "spm" })
+gts.open()
+let gtsConn = gts.connection("dummy", (sids) => {
+    console.log("OUTDATED", sids)
+})
+gts.on("debug", (msg) => {
+    console.log("DEBUG", msg)
+})
+[...]
+
+let Foo = {}
+[...]
+
+let definition = `
+    schema {
+        query:    Root
+        mutation: Root
+    }
+    type Root {
+        ${gts.schemaSubscription()}
+        [...]
+    }
+    type _Subscription {
+        ${gts.schemaSubscriptions()}
+        ${gts.schemaSubscribe()}
+        ${gts.schemaUnsubscribe()}
+        ${gts.schemaPause()}
+        ${gts.schemaResume()}
+    }
+    [...]
+}
+let resolvers = {
+    Root: {
+        _Subscription: gts.resolverSubscription()
+    },
+    _Subscription: {
+        subscribe:     gts.resolverSubscribe(),
+        unsubscribe:   gts.resolverUnsubscribe(),
+        subscriptions: gts.resolverSubscriptions(),
+        pause:         gts.resolverPause(),
+        resume:        gts.resolverResume()
+    },
+    Foo: {
+        get: (obj, args, ctx, info) => {
+            let key = args.key
+            let val = Foo[key]
+            ctx.scope.record("Foo", key, "read", "direct", "one")
+            return val
+        },
+        set: (obj, args, ctx, info) => {
+            let key = args.key
+            let val = args.val
+            foo[key] = val
+            ctx.scope.record("Foo", key, "write", "direct", "one")
+            return null
+        },
+        [...]
+    }
+    [...]
+}
+let schema = GraphQLTools.makeExecutableSchema({
+    typeDefs: [ definition ],
+    resolvers: resolvers
+})
+
+[...]
+[...]((query, variables) => {
+    let scope = gtsConn.scope(query, variables)
+    ctx.scope = scope
+    await GraphQL.graphql(schema, query, null, ctx, variables).then((result) => {
+        scope.commit()
+        [...]
+    }).catch((result) => {
+        scope.reject()
+        [...]
+    })
+})
+```
+
+For a real example, see [sample script](sample/sample.js)
 
 See Also
 --------
