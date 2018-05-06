@@ -175,7 +175,7 @@ export default class gtsTracking {
     scopeRecord (...args) {
         let scope = new Scope(this, null, "<internal>", {}, true)
         scope.record(...args)
-        scope.commit()
+        this.scopeProcess(scope)
     }
 }
 
