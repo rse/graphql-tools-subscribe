@@ -174,16 +174,15 @@ export default class gtsEvaluation {
 
         /*  queries (scopes without writes)...  */
         if (!hasWriteOps) {
-            /*  (determine whether there is a subscription for the scope)  */
-            let hasSubscription = await this.keyval.get(`sid:${sid},cid:${cid}`)
-
-            if (hasSubscription) {
+            if (scope.state === "subscribed") {
                 /*  ...with subscriptions are remembered  */
                 await this.keyval.acquire()
                 let rec = await this.keyval.get(`sid:${sid},rec`)
                 if (rec === undefined)
                     await this.keyval.put(`sid:${sid},rec`, scope.records)
+                await this.keyval.put(`sid:${sid},cid:${cid}`, Date.now())
                 await this.keyval.release()
+                this.emit("debug", `scope-store-update sid=${sid} cid=${cid}`)
             }
             else {
                 /*  ...without subscriptions can be just destroyed
@@ -208,22 +207,27 @@ export default class gtsEvaluation {
 
             /*  externally publish ids of outdated queries to all instances
                 (comes in on all instances via scopeOutdatedEvent below)  */
-            if (outdatedSids.length > 0)
+            if (outdatedSids.length > 0) {
+                this.emit("debug", `scope-outdated-send sids=${outdatedSids}`)
                 this.pubsub.publish("outdated", outdatedSids)
+            }
         }
     }
 
     /*  process an outdated event  */
     scopeOutdatedEvent (sids) {
+        this.emit("debug", `scope-outdated-receive sids=${sids.join(",")}`)
         this.connections.forEach((conn) => {
             let outdated = {}
             conn.scopes.forEach((scope) => {
-                if (sids.indexOf(scope.sid) >= 0)
+                if (scope.state === "subscribed" && sids.indexOf(scope.sid) >= 0)
                     outdated[scope.sid] = true
             })
             outdated = Object.keys(outdated)
-            if (outdated.length > 0)
+            if (outdated.length > 0) {
+                this.emit("debug", `scope-outdated-notify sids=${outdated.join(",")}`)
                 conn.notify(outdated)
+            }
         })
     }
 
@@ -276,15 +280,18 @@ export default class gtsEvaluation {
 
     /*  destroy a scope  */
     async scopeDestroy (scope) {
+        /*  determine parameters  */
         let sid = scope.sid
+        let cid = scope.connection !== null ? scope.connection.cid : `${this.uuid}:none`
 
         /*  scope records with no more corresponding subscriptions are deleted  */
         await this.keyval.acquire()
+        await this.keyval.del(`sid:${sid},cid:${cid}`)
         let keys = await this.keyval.keys(`sid:${sid},cid:*`)
-        let cids = keys.map((key) => key.replace(/^sid:.+?,cid:(.+)$/, "$1"))
-        if (cids.length === 0)
+        if (keys.length === 0)
             await this.keyval.del(`sid:${sid},rec`)
         await this.keyval.release()
+        this.emit("debug", `scope-store-delete sid=${sid} cid=${cid}`)
     }
 }
 

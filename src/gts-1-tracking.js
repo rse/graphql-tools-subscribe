@@ -40,6 +40,9 @@ class Scope extends EventEmitter {
         this.api        = api
         this.connection = connection
 
+        /*  the state of the scope  */
+        this.state      = "unsubscribed"
+
         /*  generate unique subscription id from query and variables */
         const data = ObjectHasher.sort({ query, variables })
         const ns = new UUID(5, "ns:URL", "http://engelschall.com/ns/graphql-query")

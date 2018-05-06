@@ -62,10 +62,11 @@ export default class gtsSubscription {
             let cid = obj.cid
             let sid = ctx.scope.sid
 
-            /*  add to record  */
-            await this.keyval.acquire()
-            await this.keyval.put(`sid:${sid},cid:${cid}`, "subscribed")
-            await this.keyval.release()
+            /*  enable subscription  */
+            if (ctx.scope.state !== "unsubscribed")
+                throw new Error("subscribe: failed to subscribe to GraphQL query, " +
+                    `because it is in state "${ctx.scope.state}" (but expected "unsubscribed")`)
+            ctx.scope.state = "subscribed"
 
             /*  drop an event about the subscription  */
             ctx.scope.api.emit("scope-subscribe", { sid: sid, cid: cid })
@@ -95,15 +96,20 @@ export default class gtsSubscription {
             let cid = obj.cid
             let sid = args.sid
 
-            /*  delete from record  */
-            await this.keyval.acquire()
-            let subscription = await this.keyval.get(`sid:${sid},cid:${cid}`)
-            if (subscription === undefined) {
-                await this.keyval.release()
-                throw new Error(`no such subscription "${sid}"`)
-            }
-            await this.keyval.del(`sid:${sid},cid:${cid}`)
-            await this.keyval.release()
+            /*  disable subscription  */
+            let found = false
+            let conn = ctx.scope.connection
+            conn.scopes.forEach((scope) => {
+                if (scope.sid !== sid)
+                    return
+                if (scope.state === "unsubscribed")
+                    throw new Error("unsubscribe: failed to unsubscribe from GraphQL query, " +
+                        "because it is already in state \"unsubscribed\"")
+                scope.destroy()
+                found = true
+            })
+            if (!found)
+                throw new Error(`unsubscribe: no such GraphQL query subscription "${sid}" found`)
 
             /*  drop an event about the unsubscription  */
             ctx.scope.api.emit("scope-unsubscribe", { sid: sid, cid: cid })
@@ -130,10 +136,12 @@ export default class gtsSubscription {
             let cid = obj.cid
 
             /*  determine subscriptions  */
-            await this.keyval.acquire()
-            let keys = await this.keyval.keys(`sid:*,cid:${cid}`)
-            let sids = keys.map((key) => key.replace(/^sid:(.+?),cid:.+$/, "$1"))
-            await this.keyval.release()
+            let sids = []
+            let conn = ctx.scope.connection
+            conn.scopes.forEach((scope) => {
+                if (scope.state === "subscribed")
+                    sids.push(scope.sid)
+            })
 
             /*  drop an event about the subscriptions  */
             ctx.scope.api.emit("scope-subscriptions", { sids: sids, cid: cid })
@@ -163,19 +171,20 @@ export default class gtsSubscription {
             let cid = obj.cid
             let sid = args.sid
 
-            /*  determine subscriptions  */
-            await this.keyval.acquire()
-            let subscription = await this.keyval.get(`sid:${sid},cid:${cid}`)
-            if (subscription === undefined) {
-                await this.keyval.release()
-                throw new Error(`no such subscription "${sid}"`)
-            }
-            else if (subscription === "paused") {
-                await this.keyval.release()
-                throw new Error(`subscription "${sid}" already paused`)
-            }
-            await this.keyval.put(`sid:${sid},cid:${cid}`, "paused")
-            await this.keyval.release()
+            /*  pause subscription  */
+            let found = false
+            let conn = ctx.scope.connection
+            conn.scopes.forEach((scope) => {
+                if (scope.sid !== sid)
+                    return
+                if (scope.state !== "subscribed")
+                    throw new Error("pause: failed to pause GraphQL query subscription, " +
+                        `because it is in state "${scope.state}" (but expected "subscribed")`)
+                scope.state = "paused"
+                found = true
+            })
+            if (!found)
+                throw new Error(`pause: no such GraphQL query subscription "${sid}" found`)
 
             /*  drop an event about the pausing  */
             ctx.scope.api.emit("scope-pause", { sid: sid, cid: cid })
@@ -205,19 +214,20 @@ export default class gtsSubscription {
             let cid = obj.cid
             let sid = args.sid
 
-            /*  determine subscriptions  */
-            await this.keyval.acquire()
-            let subscription = await this.keyval.get(`sid:${sid},cid:${cid}`)
-            if (subscription === undefined) {
-                await this.keyval.release()
-                throw new Error(`no such subscription "${sid}"`)
-            }
-            else if (subscription !== "paused") {
-                await this.keyval.release()
-                throw new Error(`subscription "${sid}" not paused`)
-            }
-            await this.keyval.put(`sid:${sid},cid:${cid}`, "subscribed")
-            await this.keyval.release()
+            /*  resume subscription  */
+            let found = false
+            let conn = ctx.scope.connection
+            conn.scopes.forEach((scope) => {
+                if (scope.sid !== sid)
+                    return
+                if (scope.state !== "paused")
+                    throw new Error("resume: failed to resume GraphQL query subscription, " +
+                        `because it is in state "${scope.state}" (but expected "paused")`)
+                scope.state = "subscribed"
+                found = true
+            })
+            if (!found)
+                throw new Error(`resume: no such GraphQL query subscription "${sid}" found`)
 
             /*  drop an event about the resuming  */
             ctx.scope.api.emit("scope-resume", { sid: sid, cid: cid })
