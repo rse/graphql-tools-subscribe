@@ -75,6 +75,7 @@ class GraphQLToolsSubscribe extends aggregation(
         this.subscription = await this.pubsub.subscribe("outdated", (sids) => {
             this.__scopeOutdatedEvent(sids)
         })
+        return this
     }
 
     /*  close service  */
@@ -83,6 +84,7 @@ class GraphQLToolsSubscribe extends aggregation(
         this.subscription = null
         await this.keyval.close()
         await this.pubsub.close()
+        return this
     }
 
     /*  version information  */
