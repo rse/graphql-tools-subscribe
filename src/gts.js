@@ -42,7 +42,7 @@ class GraphQLToolsSubscribe extends aggregation(
 ) {
     /*  the class constructor  */
     constructor (options = {}) {
-        super(options)
+        super()
         this.options = Object.assign({
             pubsub: "spm",
             keyval: "spm"
