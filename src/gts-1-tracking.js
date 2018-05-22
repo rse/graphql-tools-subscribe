@@ -84,13 +84,13 @@ class Scope extends EventEmitter {
 
     /*  pass-through operations to connection  */
     commit () {
-        this.emit("commit",  this)
+        this.emit("commit", this)
         this.api.emit("scope-commit", { sid: this.sid })
         if (!this.silent)
             this.api.emit("debug", `scope-commit sid=${this.sid}`)
     }
     reject () {
-        this.emit("reject",  this)
+        this.emit("reject", this)
         this.api.emit("scope-reject", { sid: this.sid })
         if (!this.silent)
             this.api.emit("debug", `scope-reject sid=${this.sid}`)
