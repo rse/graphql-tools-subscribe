@@ -208,7 +208,7 @@ export default class gtsEvaluation {
             /*  externally publish ids of outdated queries to all instances
                 (comes in on all instances via __scopeOutdatedEvent below)  */
             if (outdatedSids.length > 0) {
-                this.emit("debug", `scope-outdated-send sids=${outdatedSids}`)
+                this.emit("debug", `scope-outdated-send sids=${outdatedSids.join(",")}`)
                 this.pubsub.publish("outdated", outdatedSids)
             }
         }
