@@ -179,7 +179,9 @@ export default class gtsEvaluation {
                 let rec = await this.keyval.get(`sid:${sid},rec`)
                 if (rec === undefined)
                     await this.keyval.put(`sid:${sid},rec`, scope.records)
-                await this.keyval.put(`sid:${sid},cid:${cid}`, Date.now())
+                let pid = await this.keyval.get(`sid:${sid},cid:${cid}`)
+                if (pid === undefined || pid !== process.pid)
+                    await this.keyval.put(`sid:${sid},cid:${cid}`, process.pid)
                 this.emit("debug", `scope-store-update sid=${sid} cid=${cid}`)
             }
             else {
