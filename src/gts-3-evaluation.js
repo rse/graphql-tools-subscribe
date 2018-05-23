@@ -252,7 +252,7 @@ export default class gtsEvaluation {
         await this.keyval.acquire()
         let info = { sids: {} }
         let keys = await this.keyval.keys("sid:*,cid:*")
-        keys.map((key) => {
+        keys.forEach((key) => {
             let sid = key.replace(/^sid:(.+?),cid:.+?$/, "$1")
             let cid = key.replace(/^sid:.+?,cid:(.+?)$/, "$1")
             if (info.sids[sid] === undefined)
