@@ -292,5 +292,18 @@ export default class gtsEvaluation {
         })
         return dump
     }
+
+    /*  flush all information  */
+    async flush () {
+        /*  flush all external storage information  */
+        let keys = await this.keyval.keys("sid:*,cid:*")
+        await Bluebird.each(keys, async (key) => {
+            this.keyval.del(key)
+        })
+        keys = await this.keyval.keys("sid:*,rec")
+        await Bluebird.each(keys, async (key) => {
+            this.keyval.del(key)
+        })
+    }
 }
 

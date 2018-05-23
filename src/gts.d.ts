@@ -94,7 +94,10 @@ declare module "graphql-tools-subscribe" {
         public resolverResume(): Resolver
 
         /*  Dump a textual description of the current connection/subscription/record information  */
-        public dump(): string
+        public dump(): Promise<string>
+
+        /*  Flush all external storage information  */
+        public flush(): Promise<void>
     }
 
     /*  a GraphQL resolver  */
