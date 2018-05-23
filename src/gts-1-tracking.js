@@ -84,6 +84,7 @@ class Scope extends EventEmitter {
 
     /*  pass-through operations to connection  */
     commit () {
+        this.api.__scopeProcess(this)
         this.emit("commit", this)
         this.api.emit("scope-commit", { sid: this.sid })
         if (!this.silent)
@@ -96,6 +97,7 @@ class Scope extends EventEmitter {
             this.api.emit("debug", `scope-reject sid=${this.sid}`)
     }
     destroy () {
+        this.api.__scopeDestroy(this)
         this.emit("destroy", this)
         this.api.emit("scope-destroy", { sid: this.sid })
         if (!this.silent)
@@ -127,7 +129,6 @@ class Connection extends EventEmitter {
         const scope = new Scope(this.api, this, query, variables)
         this.scopes.add(scope)
         scope.on("commit", () => {
-            this.emit("scopeProcess", scope)
             /*  keep the scope attached to the connection and destroy
                 it only on unsubscription or destroying the connection  */
         })
@@ -136,7 +137,6 @@ class Connection extends EventEmitter {
         })
         scope.on("destroy", () => {
             this.scopes.delete(scope)
-            this.emit("scopeDestroy", scope)
         })
         return scope
     }
@@ -165,12 +165,6 @@ export default class gtsTracking {
         this.connections.add(connection)
         connection.on("destroy", () => {
             this.connections.delete(connection)
-        })
-        connection.on("scopeDestroy", (scope) => {
-            this.__scopeDestroy(scope)
-        })
-        connection.on("scopeProcess", (scope) => {
-            this.__scopeProcess(scope)
         })
         return connection
     }
