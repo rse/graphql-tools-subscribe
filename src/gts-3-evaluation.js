@@ -176,12 +176,10 @@ export default class gtsEvaluation {
         if (!hasWriteOps) {
             if (scope.state === "subscribed") {
                 /*  ...with subscriptions are remembered  */
-                await this.keyval.acquire()
                 let rec = await this.keyval.get(`sid:${sid},rec`)
                 if (rec === undefined)
                     await this.keyval.put(`sid:${sid},rec`, scope.records)
                 await this.keyval.put(`sid:${sid},cid:${cid}`, Date.now())
-                await this.keyval.release()
                 this.emit("debug", `scope-store-update sid=${sid} cid=${cid}`)
             }
             else {
@@ -194,16 +192,15 @@ export default class gtsEvaluation {
         /*  mutations (scopes with writes) might outdate queries (scopes with reads)  */
         else {
             /*  iterate over all stored scope records  */
-            await this.keyval.acquire()
             let keys = await this.keyval.keys("sid:*,rec")
             let sids = keys.map((key) => key.replace(/^sid:(.+?),rec$/, "$1"))
             let outdatedSids = []
             await Bluebird.each(sids, async (otherSid) => {
                 let records = await this.keyval.get(`sid:${otherSid},rec`)
-                if (this.__scopeOutdated(scope.records, records))
-                    outdatedSids.push(otherSid)
+                if (records !== undefined)
+                    if (this.__scopeOutdated(scope.records, records))
+                        outdatedSids.push(otherSid)
             })
-            await this.keyval.release()
 
             /*  externally publish ids of outdated queries to all instances
                 (comes in on all instances via __scopeOutdatedEvent below)  */
@@ -242,12 +239,10 @@ export default class gtsEvaluation {
         let cid = scope.connection !== null ? scope.connection.cid : `${this.uuid}:none`
 
         /*  scope records with no more corresponding subscriptions are deleted  */
-        await this.keyval.acquire()
         await this.keyval.del(`sid:${sid},cid:${cid}`)
         let keys = await this.keyval.keys(`sid:${sid},cid:*`)
         if (keys.length === 0)
             await this.keyval.del(`sid:${sid},rec`)
-        await this.keyval.release()
         this.emit("debug", `scope-store-delete sid=${sid} cid=${cid}`)
     }
 
