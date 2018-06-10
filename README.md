@@ -89,14 +89,20 @@ let resolvers = {
         get: (obj, args, ctx, info) => {
             let key = args.key
             let val = Foo[key]
-            ctx.scope.record("Foo", key, "read", "direct", "one")
+            ctx.scope.record({
+                op: "read", arity: "one",
+                dstType: "Foo", dstIds: [ "Foo" ], dstAttrs: [ key ]
+            })
             return val
         },
         set: (obj, args, ctx, info) => {
             let key = args.key
             let val = args.val
             foo[key] = val
-            ctx.scope.record("Foo", key, "write", "direct", "one")
+            ctx.scope.record({
+                op: "update", arity: "one",
+                dstType: "Foo", dstIds: [ "Foo" ], dstAttrs: [ key ]
+            })
             return null
         },
         [...]
