@@ -117,17 +117,25 @@ declare module "graphql-tools-subscribe" {
     /*  The tracking scope  */
     interface Scope {
         /*  Record a data mode access.
-            The **type** is a domain-specific type of the object the access happened onto.
-            The **oid** is a domain-specific identifier of the object the access happended onto.
-            The **action** is one of the CRUD operations: `read`, `create`, `update` or `delete`.
-            The **via** is the way the object was approached: `direct` or via a `relation`.
-            The **onto** is the way the object was approached: `one`, `many` or `all`.
-            Not all combinations are valid. The valid combinations for `action:via:onto` are:
-                - read:(direct|relation):(one|many|all)
-                - create:direct:one
-                - update:direct:(one|many|all)
-                - delete:direct:(one|many|all)  */
-        public record(type: string, oid: string, action: string, via: string, onto: string): void
+            The **srcType**  is the optional domain-specific type of the object the access started at.
+            The **srcId**    is the optional domain-specific identifier of the object the access started at.
+            The **srcAttr**  is the optional domain-specific attribute of the object the access started at.
+            The **op**       is one of the CRUD operations: `read`, `create`, `update` or `delete`.
+            The **arity**    is the way the object was approached: `one`, `many` or `all`.
+            The **dstType**  is the domain-specific type of the object the access happened onto.
+            The **dstIds**   is the domain-specific list of identifiers of the objects the access happended onto.
+            The **dstAttrs** is the domain-specific list of affected attributes of the object
+                             (or "*") the access happened onto.  */
+        public record(record: {
+            srcType?: string,
+            srcId?: string,
+            srcAttr?: string,
+            op: string,
+            arity: string,
+            dstType: string,
+            dstIds: string[],
+            dstAttrs?: string[]
+        }): void
 
         /*  Commit scope  */
         public commit(): void

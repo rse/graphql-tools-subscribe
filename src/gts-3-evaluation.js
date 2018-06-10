@@ -27,133 +27,110 @@ import Bluebird from "bluebird"
 
 /*  the API mixin class  */
 export default class gtsEvaluation {
-    /*  parse the operation string  */
-    __opParse (op) {
-        let m = op.match(/^(read|create|update|delete):(direct|relation):(one|many|all)$/)
+    /*  stringify a scope record  */
+    __recordStringify (rec) {
+        let str = ""
+        if (rec.srcType !== null && rec.srcId !== null && rec.srcAttr !== null)
+            str += `${rec.srcType}#${rec.srcId}.${rec.srcAttr}->`
+        str += `${rec.op}(${rec.arity})->`
+        str += `${rec.dstType}#{${rec.dstIds.join(",")}}.{${rec.dstAttrs.join(",")}}`
+        return str
+    }
+
+    /*  unstringify a scope record  */
+    __recordUnstringify (str) {
+        let m = str.match(/^(?:(.+?)#(.+?)\.(.+?)->)?(.+?)\((.+?)\)->(.+?)#\{(.+?)\}\.\{(.+?)\}$/)
         if (m === null)
-            throw new Error(`internal error: invalid operation "${op}"`)
-        return { action: m[1], via: m[2], onto: m[3] }
-    }
-
-    /*  check whether scope has a particular operation  */
-    __recordsContainOp (records, cb) {
-        let types = Object.keys(records)
-        for (var i = 0; i < types.length; i++) {
-            let ops = Object.keys(records[types[i]])
-            for (var j = 0; j < ops.length; j++) {
-                let op = this.__opParse(ops[j])
-                if (cb(op))
-                    return true
-            }
+            throw new Error(`invalid record string "${str}" (failed to parse)`)
+        return {
+            srcType:  m[1] || null,
+            srcId:    m[2] || null,
+            srcAttr:  m[3] || null,
+            op:       m[4],
+            arity:    m[5],
+            dstType:  m[6],
+            dstIds:   m[7].split(","),
+            dstAttrs: m[8].split(",")
         }
-        return false
     }
 
-    /*  does a new scope outdate an old scope  */
-    __scopeOutdated (recordsNew, recordsOld) {
-
-        /*  ==== CASE 1 ====
-
-            "Is an old/previously read OID now (directly) written onto?"  */
-
-        /*  find all OIDs in new scope records which write  */
-        let recordsNewWriteOID = {}
-        Object.keys(recordsNew).forEach((type) => {
-            Object.keys(recordsNew[type]).forEach((op) => {
-                let opDetail = this.__opParse(op)
-                if (opDetail.action.match(/^(?:update|delete)$/)) {
-                    recordsNew[type][op].forEach((oid) => {
-                        recordsNewWriteOID[oid] = op
-                    })
-                }
-            })
+    /*  serialize a list of records  */
+    __recordsSerialize (records) {
+        return records.map((record) => {
+            return this.__recordStringify(record)
         })
+    }
 
-        /*  for each old scope records which read, ...  */
-        let recordsOldTypes = Object.keys(recordsOld)
-        for (let i = 0; i < recordsOldTypes.length; i++) {
-            let recordsOldType = recordsOldTypes[i]
-            let recordsOldOps = Object.keys(recordsOld[recordsOldType])
-            for (let j = 0; j < recordsOldOps.length; j++) {
-                let recordsOldOp = recordsOldOps[j]
-                let recordsOldOpDetail = this.__opParse(recordsOldOp)
-                if (recordsOldOpDetail.action === "read") {
-                    /*  ...check if any of its OIDs match the write OIDs in the new scope  */
-                    let recordsOldOIDs = recordsOld[recordsOldType][recordsOldOp]
-                    for (let k = 0; k < recordsOldOIDs.length; k++) {
-                        let oid = recordsOldOIDs[k]
-                        if (recordsNewWriteOID[oid]) {
-                            this.emit("scope-outdated-direct", {
-                                type:    recordsOldType,
-                                opWrite: recordsNewWriteOID[oid],
-                                opRead:  recordsOldOp,
-                                oid:     oid
-                            })
-                            this.emit("debug", "scope-outdated-direct " +
-                                `type=${recordsOldType} ` +
-                                `opWrite=${recordsNewWriteOID[oid]} ` +
-                                `opRead=${recordsOldOp} ` +
-                                `oid=${oid}`
-                            )
-                            return true
-                        }
-                    }
-                }
-            }
+    /*  unserialize a list of records  */
+    __recordsUnserialize (records) {
+        return records.map((record) => {
+            return this.__recordUnstringify(record)
+        })
+    }
+
+    /*  does a new scope (with mutation/write) outdate an old scope (with query/read only)  */
+    __scopeOutdated (recordsNew, recordsOld) {
+        /*  check if two lists overlap  */
+        const overlap = (list1, list2) => {
+            if (list1.length === 1 && list1[0] === "*")
+                return true
+            if (list2.length === 1 && list2[0] === "*")
+                return true
+            let index = {}
+            list1.forEach((x) => { index[x] = true })
+            let overlap = list2.filter((x) => index[x])
+            return overlap.length > 0
         }
 
-        /*  ==== CASE 2 ====
+        /*  iterate over all new and old records...  */
+        for (let i = 0; i < recordsNew.length; i++) {
+            let recNew = recordsNew[i]
+            for (let j = 0; j < recordsOld.length; j++) {
+                let recOld = recordsOld[j]
+                let outdated = false
 
-            "Has an old/previously read list of OID potentially had to take
-            write results into account?". For this we have to know that the
-            valid operation combinations are which can occur in practice:
+                /*
+                 *  CASE 1: modified entity (of arbitrary direct access)
+                 *  old/query:    read(*)->Item#{1}.{id,name}
+                 *  new/mutation: update/delete(*)->Item#{1}.{name}
+                 */
+                if ((recNew.op === "update" || recNew.op === "delete")
+                    &&         recOld.dstType === recNew.dstType
+                    && overlap(recOld.dstIds,     recNew.dstIds)
+                    && overlap(recOld.dstAttrs,   recNew.dstAttrs))
+                    outdated = true
 
-                        ACTION  VIA             ONTO
-                        ------- --------------- ------------
-            old Scope:  read    direct|relation one|many|all
-            new Scope:  create  direct          one
-            new Scope:  update  direct          one|many|all
-            new Scope:  delete  direct          one|many|all
+                /*
+                 *  CASE 2: modified entity list (of relationship traversal)
+                 *  old/query     Card#1.items->read(*)->Item#{2}.{id,name}
+                 *  new/mutation: update(*)->Card#{1}.{items}
+                 */
+                else if (recNew.op === "update"
+                    &&           recOld.srcType !== null
+                    &&           recOld.srcType === recNew.dstType
+                    && overlap([ recOld.srcId ],    recNew.dstIds)
+                    && overlap([ recOld.srcAttr ],  recNew.dstAttrs))
+                    outdated = true
 
-            So, we have to take into account:
-            (create|update|delete):*:* --outdates--> read:*:(many|all)  */
+                /*
+                 *  CASE 3: modified entity list (of direct query)
+                 *  old/query     read(many/all)->Item#{*}.{id,name}
+                 *  new/mutation: create/update/delete(*)->Item#{*}.{name}
+                 */
+                else if ((recNew.op === "create" || recNew.op === "delete")
+                    &&         recOld.srcType === null
+                    &&        (recOld.arity === "many" || recOld.arity === "all")
+                    &&         recOld.dstType === recNew.dstType
+                    && overlap(recOld.dstAttrs,   recNew.dstAttrs))
+                    outdated = true
 
-        /*  for each new scope records which write, ...  */
-        let recordsNewTypes = Object.keys(recordsNew)
-        for (let i = 0; i < recordsNewTypes.length; i++) {
-            let recordsNewType = recordsNewTypes[i]
-            let recordsNewOps = Object.keys(recordsNew[recordsNewType])
-            for (let j = 0; j < recordsNewOps.length; j++) {
-                let recordsNewOp = recordsNewOps[j]
-                let recordsNewOpDetail = this.__opParse(recordsNewOp)
-                if (recordsNewOpDetail.action.match(/^(?:create|update|delete)$/)) {
-
-                    /*  for each old scope records which read, ...  */
-                    if (recordsOld[recordsNewType] === undefined)
-                        continue
-                    let recordsOldOps = Object.keys(recordsOld[recordsNewType])
-                    for (let l = 0; l < recordsOldOps.length; l++) {
-                        let recordsOldOp = recordsOldOps[l]
-                        let recordsOldOpDetail = this.__opParse(recordsOldOp)
-                        if (recordsOldOpDetail.action === "read") {
-
-                            /*  check for outdate situation  */
-                            if (   recordsOldOpDetail.onto === "many"
-                                || recordsOldOpDetail.onto === "all" ) {
-                                this.emit("scope-outdated-indirect", {
-                                    type:    recordsNewType,
-                                    opWrite: recordsNewOp,
-                                    opRead:  recordsOldOp
-                                })
-                                this.emit("debug", "scope-outdated-indirect " +
-                                    `type=${recordsNewType} ` +
-                                    `opWrite=${recordsNewOp} ` +
-                                    `opRead=${recordsOldOp}`
-                                )
-                                return true
-                            }
-                        }
-                    }
+                /*  report outdate combination  */
+                if (outdated) {
+                    this.emit("scope-outdated", { old: recordsOld[j], new: recordsNew[i] })
+                    let recOld = this.__recordStringify(recordsOld[j])
+                    let recNew = this.__recordStringify(recordsNew[i])
+                    this.emit("debug", `scope-outdated old=${recOld} new=${recNew}`)
+                    return true
                 }
             }
         }
@@ -168,17 +145,18 @@ export default class gtsEvaluation {
         let sid = scope.sid
         let cid = scope.connection !== null ? scope.connection.cid : `${this.uuid}:none`
 
-        /*  determine whether any write operations exist in the scope records  */
-        let hasWriteOps = this.__recordsContainOp(scope.records, (op) =>
-            op.action.match(/^(?:create|update|delete)$/))
+        /*  filter out write records in the scope  */
+        let recordsWrite = scope.records.filter((record) => {
+            return record.op.match(/^(?:create|update|delete)$/)
+        })
 
         /*  queries (scopes without writes)...  */
-        if (!hasWriteOps) {
+        if (recordsWrite.length === 0) {
             if (scope.state === "subscribed") {
                 /*  ...with subscriptions are remembered  */
                 let rec = await this.keyval.get(`sid:${sid},rec`)
                 if (rec === undefined)
-                    await this.keyval.put(`sid:${sid},rec`, scope.records)
+                    await this.keyval.put(`sid:${sid},rec`, this.__recordsSerialize(scope.records))
                 let pid = await this.keyval.get(`sid:${sid},cid:${cid}`)
                 if (pid === undefined || pid !== process.pid)
                     await this.keyval.put(`sid:${sid},cid:${cid}`, process.pid)
@@ -199,9 +177,11 @@ export default class gtsEvaluation {
             let outdatedSids = []
             await Bluebird.each(sids, async (otherSid) => {
                 let records = await this.keyval.get(`sid:${otherSid},rec`)
-                if (records !== undefined)
-                    if (this.__scopeOutdated(scope.records, records))
+                if (records !== undefined) {
+                    records = this.__recordsUnserialize(records)
+                    if (this.__scopeOutdated(recordsWrite, records))
                         outdatedSids.push(otherSid)
+                }
             })
 
             /*  externally publish ids of outdated queries to all instances
@@ -265,7 +245,8 @@ export default class gtsEvaluation {
         let sids = keys.map((key) => key.replace(/^sid:(.+?),rec$/, "$1"))
         await Bluebird.each(sids, async (sid) => {
             let records = await this.keyval.get(`sid:${sid},rec`)
-            info.sids[sid].records.push(records)
+            records = this.__recordsUnserialize(records)
+            info.sids[sid].records = info.sids[sid].records.concat(records)
         })
         await this.keyval.release()
 
@@ -277,19 +258,8 @@ export default class gtsEvaluation {
                 dump += `    Connection { cid: ${cid} }\n`
             })
             info.sids[sid].records.forEach((record) => {
-                let types = Object.keys(record)
-                for (let i = 0; i < types.length; i++) {
-                    let type = types[i]
-                    let ops = Object.keys(record[type])
-                    for (let j = 0; j < ops.length; j++) {
-                        let op = ops[j]
-                        let oids = record[type][op]
-                        for (let k = 0; k < oids.length; k++) {
-                            let oid = oids[k]
-                            dump += `    Record { type: ${type}, op: ${op}, oid: ${oid} }\n`
-                        }
-                    }
-                }
+                let rec = this.__recordStringify(record)
+                dump += `    Record { rec: ${rec} }\n`
             })
         })
         return dump

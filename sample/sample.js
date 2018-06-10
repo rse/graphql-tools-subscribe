@@ -28,6 +28,7 @@ import * as GraphQL          from "graphql"
 import * as GraphQLTools     from "graphql-tools"
 import GraphQLToolsTypes     from "graphql-tools-types"
 import GraphQLToolsSubscribe from ".."
+import GraphQLFields         from "graphql-fields"
 
 /*  create a new GraphQL-Tools-Subscribe context  */
 let gts = new GraphQLToolsSubscribe({
@@ -66,8 +67,8 @@ let definition = `
         createShoppingCard(id: ID!, items: [ID]): ShoppingCard
         updateShoppingCard(id: ID!, items: [ID]!): ShoppingCard
         deleteShoppingCard(id: ID!): ID
-        createItem(id: ID!, title: String): Item
-        updateItem(id: ID!, title: String!): Item
+        createItem(id: ID!, title: String, price: Float): Item
+        updateItem(id: ID!, title: String, price: Float): Item
         deleteItem(id: ID!): ID
     }
     type ShoppingCard {
@@ -77,6 +78,7 @@ let definition = `
     type Item {
         id: ID
         title: String
+        price: Float
     }
 `
 
@@ -85,33 +87,31 @@ let resolvers = {
     UUID: GraphQLToolsTypes.UUID({ name: "UUID", storage: "string" }),
     Void: GraphQLToolsTypes.Void({ name: "Void" }),
     RootQuery: {
-        ShoppingCard: (root, args, ctx /*, info */) => {
+        ShoppingCard: (root, args, ctx, info) => {
             let result
+            let attr = Object.keys(GraphQLFields(info))
             if (args.id) {
                 result = ctx.shoppingCards.filter((sc) => sc.id === args.id)
                 if (result.length > 0)
-                    ctx.scope.record("ShoppingCard", result[0].id, "read", "direct", "one")
+                    ctx.scope.record({ op: "read", arity: "one", dstType: "ShoppingCard", dstIds: [ result[0].id ], dstAttrs: attr })
             }
             else {
                 result = ctx.shoppingCards
-                result.forEach((sc) => {
-                    ctx.scope.record("ShoppingCard", sc.id, "read", "direct", "all")
-                })
+                ctx.scope.record({ op: "read", arity: "all", dstType: "ShoppingCard", dstIds: result.map((sc) => sc.id), dstAttrs: attr })
             }
             return result
         },
-        Item: (root, args, ctx /*, info */) => {
+        Item: (root, args, ctx, info) => {
             let result
+            let attr = Object.keys(GraphQLFields(info))
             if (args.id) {
                 result = ctx.items.filter((item) => item.id === args.id)
                 if (result.length > 0)
-                    ctx.scope.record("Item", result[0].id, "read", "direct", "one")
+                    ctx.scope.record({ op: "read", arity: "one", dstType: "Item", dstIds: [ result[0].id ], dstAttrs: attr })
             }
             else {
                 result = ctx.items
-                result.forEach((item) => {
-                    ctx.scope.record("Item", item.id, "read", "direct", "all")
-                })
+                ctx.scope.record({ op: "read", arity: "all", dstType: "Item", dstIds: result.map((item) => item.id), dstAttrs: attr })
             }
             return result
         },
@@ -128,47 +128,54 @@ let resolvers = {
         createShoppingCard: (root, args, ctx /*, info */) => {
             let obj = { id: args.id, items: args.items ? args.items : [] }
             ctx.shoppingCards.push(obj)
-            ctx.scope.record("ShoppingCard", obj.id, "create", "direct", "one")
+            ctx.scope.record({ op: "create", arity: "one", dstType: "ShoppingCard", dstIds: [ obj.id ], dstAttrs: [ "*" ] })
             return obj
         },
         updateShoppingCard: (root, args, ctx /*, info */) => {
             let obj = ctx.shoppingCards.find((sc) => sc.id === args.id)
             obj.items = args.items
-            ctx.scope.record("ShoppingCard", obj.id, "update", "direct", "one")
+            ctx.scope.record({ op: "update", arity: "one", dstType: "ShoppingCard", dstIds: [ obj.id ], dstAttrs: [ "items" ] })
             return obj
         },
         deleteShoppingCard: (root, args, ctx /*, info */) => {
             let idx = ctx.shoppingCards.findIndex((sc) => sc.id === args.id)
             ctx.shoppingCards.splice(idx, 1)
-            ctx.scope.record("ShoppingCard", args.id, "delete", "direct", "one")
+            ctx.scope.record({ op: "delete", arity: "one", dstType: "ShoppingCard", dstIds: [ args.id ], dstAttrs: [ "*" ] })
             return args.id
         },
         createItem: (root, args, ctx /*, info */) => {
-            let obj = { id: args.id, title: args.title }
+            let obj = { id: args.id, title: args.title, price: args.price }
             ctx.items.push(obj)
-            ctx.scope.record("Item", obj.id, "create", "direct", "one")
+            ctx.scope.record({ op: "create", arity: "one", dstType: "Item", dstIds: [ obj.id ], dstAttrs: [ "*" ] })
             return obj
         },
         updateItem: (root, args, ctx /*, info */) => {
             let obj = ctx.items.find((item) => item.id === args.id)
-            obj.title = args.title
-            ctx.scope.record("Item", obj.id, "update", "direct", "one")
+            let attr = []
+            if (args.title) { obj.title = args.title; attr.push("title") }
+            if (args.price) { obj.price = args.price; attr.push("price") }
+            ctx.scope.record({ op: "update", arity: "one", dstType: "Item", dstIds: [ obj.id ], dstAttrs: attr })
             return obj
         },
         deleteItem: (root, args, ctx /*, info */) => {
             let idx = ctx.items.findIndex((item) => item.id === args.id)
             ctx.items.splice(idx, 1)
-            ctx.scope.record("Item", args.id, "delete", "direct", "one")
+            ctx.scope.record({ op: "delete", arity: "one", dstType: "Item", dstIds: [ args.id ], dstAttrs: [ "*" ] })
             return args.id
         }
     },
     ShoppingCard: {
-        items: (shoppingCard, args, ctx /*, info */) => {
-            return shoppingCard.items.map((id) => {
-                let obj = ctx.items.find((item) => item.id === id)
-                ctx.scope.record("Item", obj.id, "read", "relation", "all")
-                return obj
+        items: (shoppingCard, args, ctx, info) => {
+            let attr = Object.keys(GraphQLFields(info))
+            let items = shoppingCard.items.map((id) => {
+                return ctx.items.find((item) => item.id === id)
             })
+            ctx.scope.record({
+                srcType: "ShoppingCard", srcId: shoppingCard.id, srcAttr: "items",
+                op: "read", arity: "all",
+                dstType: "Item", dstIds: items.map((item) => item.id), dstAttrs: attr
+            })
+            return items
         }
     }
 }
@@ -235,6 +242,13 @@ const makeQuery = async (query, variables) => {
     await makeQuery(`
         mutation {
             updateItem(id: "i11", title: "Updated Title") {
+                id
+            }
+        }
+    `, {})
+    await makeQuery(`
+        mutation {
+            updateItem(id: "i11", price: 1.0) {
                 id
             }
         }

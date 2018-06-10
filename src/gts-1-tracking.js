@@ -23,6 +23,7 @@
 */
 
 /*  external dependencies  */
+import Ducky        from "ducky"
 import UUID         from "pure-uuid"
 import ObjectHash   from "node-object-hash"
 import EventEmitter from "eventemitter3"
@@ -50,7 +51,7 @@ class Scope extends EventEmitter {
         this.sid = (new UUID(5, ns, data)).format()
 
         /*  initialize recording  */
-        this.records = {}
+        this.records = []
         this.api.emit("scope-create", { sid: this.sid, query, variables })
         if (!this.silent)
             this.api.emit("debug", `scope-create sid=${this.sid} query=${JSON.stringify(query)} ` +
@@ -58,28 +59,59 @@ class Scope extends EventEmitter {
     }
 
     /*  record an access operation  */
-    record (type, oid, action, via, onto) {
-        /*  determine and sanity check operation  */
-        const op = `${action}:${via}:${onto}`
-        const regexp = new RegExp("(?:" +
-                  "read:(?:direct|relation):(?:one|many|all)" +
-            "|" + "create:direct:one" +
-            "|" + "update:direct:(?:one|many|all)" +
-            "|" + "delete:direct:(?:one|many|all)" +
-        ")")
-        if (!regexp.test(op))
-            throw new Error("invalid argument(s): combination of action+via+onto not allowed")
+    record (record = {}) {
+        /*  provide record field defaults  */
+        record = Object.assign({}, {
+            srcType:  null,
+            srcId:    null,
+            srcAttr:  null,
+            op:       null,
+            arity:    null,
+            dstType:  null,
+            dstIds:   [],
+            dstAttrs: [ "*" ]
+        }, record)
+
+        /*  sanity check record  */
+        let errors = []
+        if (!Ducky.validate(record, `{
+            srcType:  (null|string),
+            srcId:    (null|string),
+            srcAttr:  (null|string),
+            op:       /^(?:create|read|update|delete)$/,
+            arity:    /^(?:one|many|all)$/,
+            dstType:  string,
+            dstIds:   [ string+ ],
+            dstAttrs: [ string+ ]
+        }`, errors))
+            throw new Error(`invalid scope record: ${errors.join("; ")}`)
+
+        /*  consistency check record  */
+        let isNotNull = 0
+        let isNull    = 0
+        let attributes = [ "srcType", "srcId", "srcAttr" ]
+        attributes.forEach((attribute) => {
+            if (record[attribute] === null)
+                isNull++
+            else
+                isNotNull++
+        })
+        if ((isNotNull && isNull) || (!isNotNull && !isNull))
+            throw new Error("either all source information has to be given or none at all")
+        if (record.arity === "one" && record.dstIds.length !== 1)
+            throw new Error("invalid scope record: arity of \"one\" requires exactly one destination id")
+        if (record.dstAttrs.indexOf("*") >= 0 && record.dstAttrs.length !== 1)
+            throw new Error("invalid scope record: wildcard attribute on destination has to be given alone")
+        if (record.op === "delete" && !(record.dstAttrs.length === 1 && record.dstAttrs[0] === "*"))
+            throw new Error("invalid scope record: delete operation requires wildcard destination attribute")
 
         /*  store record  */
-        if (this.records[type] === undefined)
-            this.records[type] = {}
-        if (this.records[type][op] === undefined)
-            this.records[type][op] = []
-        if (this.records[type][op].indexOf(oid) < 0)
-            this.records[type][op].push(oid)
-        this.api.emit("scope-record", { sid: this.sid, type, op, oid })
-        if (!this.silent)
-            this.api.emit("debug", `scope-record sid=${this.sid} type=${type} op=${op} oid=${oid}`)
+        this.records.push(record)
+        this.api.emit("scope-record", { sid: this.sid, record: record })
+        if (!this.silent) {
+            let rec = this.api.__recordStringify(record)
+            this.api.emit("debug", `scope-record sid=${this.sid} record=${rec}`)
+        }
     }
 
     /*  pass-through operations to connection  */
