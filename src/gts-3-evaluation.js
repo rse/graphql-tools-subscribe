@@ -155,8 +155,9 @@ export default class gtsEvaluation {
             if (scope.state === "subscribed") {
                 /*  ...with subscriptions are remembered  */
                 let rec = await this.keyval.get(`sid:${sid},rec`)
-                if (rec === undefined)
-                    await this.keyval.put(`sid:${sid},rec`, this.__recordsSerialize(scope.records))
+                let recNew = this.__recordsSerialize(scope.records)
+                if (rec === undefined || rec !== recNew)
+                    await this.keyval.put(`sid:${sid},rec`, recNew)
                 let pid = await this.keyval.get(`sid:${sid},cid:${cid}`)
                 if (pid === undefined || pid !== process.pid)
                     await this.keyval.put(`sid:${sid},cid:${cid}`, process.pid)
