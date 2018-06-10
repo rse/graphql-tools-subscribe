@@ -71,7 +71,7 @@ module.exports = function (grunt) {
                             "helpers":     true,
                             "polyfill":    true,
                             "regenerator": false,
-                            "moduleName": "babel-runtime"
+                            "moduleName":  "babel-runtime"
                         } ]
                     ]
                 }
