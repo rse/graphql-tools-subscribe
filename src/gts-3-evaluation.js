@@ -72,6 +72,8 @@ export default class gtsEvaluation {
     __scopeOutdated (recordsNew, recordsOld) {
         /*  check if two lists overlap  */
         const overlap = (list1, list2) => {
+            if (list1.length === 0 || list2.length === 0)
+                return false
             if (list1.length === 1 && list1[0] === "*")
                 return true
             if (list2.length === 1 && list2[0] === "*")

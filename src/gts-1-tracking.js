@@ -81,7 +81,7 @@ class Scope extends EventEmitter {
             op:       /^(?:create|read|update|delete)$/,
             arity:    /^(?:one|many|all)$/,
             dstType:  string,
-            dstIds:   [ string+ ],
+            dstIds:   [ string* ],
             dstAttrs: [ string+ ]
         }`, errors))
             throw new Error(`invalid scope record: ${errors.join("; ")}`)
