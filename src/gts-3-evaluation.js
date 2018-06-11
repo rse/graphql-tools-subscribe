@@ -39,7 +39,7 @@ export default class gtsEvaluation {
 
     /*  unstringify a scope record  */
     __recordUnstringify (str) {
-        let m = str.match(/^(?:(.+?)#(.+?)\.(.+?)->)?(.+?)\((.+?)\)->(.+?)#\{(.+?)\}\.\{(.+?)\}$/)
+        let m = str.match(/^(?:(.+?)#(.+?)\.(.+?)->)?(.+?)\((.+?)\)->(.+?)#\{(.*?)\}\.\{(.+?)\}$/)
         if (m === null)
             throw new Error(`invalid record string "${str}" (failed to parse)`)
         return {
