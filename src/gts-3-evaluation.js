@@ -23,6 +23,7 @@
 */
 
 /*  external dependencies  */
+import Ducky    from "ducky"
 import Bluebird from "bluebird"
 
 /*  the API mixin class  */
@@ -63,9 +64,19 @@ export default class gtsEvaluation {
 
     /*  unserialize a list of records  */
     __recordsUnserialize (records) {
-        return records.map((record) => {
-            return this.__recordUnstringify(record)
-        })
+        let result = null
+        if (Ducky.validate(records, "[ string* ]")) {
+            try {
+                result = records.map((record) => {
+                    return this.__recordUnstringify(record)
+                })
+            }
+            catch (ex) {
+                /* ignore */
+                result = null
+            }
+        }
+        return result
     }
 
     /*  does a new scope (with mutation/write) outdate an old scope (with query/read only)  */
@@ -182,7 +193,9 @@ export default class gtsEvaluation {
                 let records = await this.keyval.get(`sid:${otherSid},rec`)
                 if (records !== undefined) {
                     records = this.__recordsUnserialize(records)
-                    if (this.__scopeOutdated(recordsWrite, records))
+                    if (records === null)
+                        await this.keyval.del(`sid:${otherSid},rec`)
+                    else if (this.__scopeOutdated(recordsWrite, records))
                         outdatedSids.push(otherSid)
                 }
             })
@@ -248,8 +261,13 @@ export default class gtsEvaluation {
         let sids = keys.map((key) => key.replace(/^sid:(.+?),rec$/, "$1"))
         await Bluebird.each(sids, async (sid) => {
             let records = await this.keyval.get(`sid:${sid},rec`)
-            records = this.__recordsUnserialize(records)
-            info.sids[sid].records = info.sids[sid].records.concat(records)
+            if (records !== undefined) {
+                records = this.__recordsUnserialize(records)
+                if (records === null)
+                    await this.keyval.del(`sid:${sid},rec`)
+                else
+                    info.sids[sid].records = info.sids[sid].records.concat(records)
+            }
         })
         await this.keyval.release()
 
