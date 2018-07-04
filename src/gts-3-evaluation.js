@@ -130,7 +130,7 @@ export default class gtsEvaluation {
                  *  old/query     read(many/all)->Item#{*}.{id,name}
                  *  new/mutation: create/update/delete(*)->Item#{*}.{name}
                  */
-                else if ((recNew.op === "create" || recNew.op === "delete")
+                else if ((recNew.op === "create" || recNew.op === "update" || recNew.op === "delete")
                     &&         recOld.srcType === null
                     &&        (recOld.arity === "many" || recOld.arity === "all")
                     &&         recOld.dstType === recNew.dstType
