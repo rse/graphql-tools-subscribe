@@ -167,14 +167,12 @@ export default class gtsEvaluation {
         if (recordsWrite.length === 0) {
             if (scope.state === "subscribed") {
                 /*  ...with subscriptions are remembered  */
-                let rec = await this.keyval.get(`sid:${sid},rec`)
+                let rec = await this.keyval.get(`sid:${sid},cid:${cid}`)
                 let recNew = this.__recordsSerialize(scope.records)
-                if (rec === undefined || rec !== recNew)
-                    await this.keyval.put(`sid:${sid},rec`, recNew)
-                let pid = await this.keyval.get(`sid:${sid},cid:${cid}`)
-                if (pid === undefined || pid !== process.pid)
-                    await this.keyval.put(`sid:${sid},cid:${cid}`, process.pid)
-                this.emit("debug", `scope-store-update sid=${sid} cid=${cid}`)
+                if (rec === undefined || rec !== recNew) {
+                    await this.keyval.put(`sid:${sid},cid:${cid}`, recNew)
+                    this.emit("debug", `scope-store-update sid=${sid} cid=${cid}`)
+                }
             }
             else {
                 /*  ...without subscriptions can be just destroyed
@@ -185,20 +183,48 @@ export default class gtsEvaluation {
 
         /*  mutations (scopes with writes) might outdate queries (scopes with reads)  */
         else {
-            /*  iterate over all stored scope records  */
-            let keys = await this.keyval.keys("sid:*,rec")
-            let sids = keys.map((key) => key.replace(/^sid:(.+?),rec$/, "$1"))
-            let outdatedSids = []
-            await Bluebird.each(sids, async (otherSid) => {
-                let records = await this.keyval.get(`sid:${otherSid},rec`)
-                if (records !== undefined) {
-                    records = this.__recordsUnserialize(records)
-                    if (records === null)
-                        await this.keyval.del(`sid:${otherSid},rec`)
-                    else if (this.__scopeOutdated(recordsWrite, records))
-                        outdatedSids.push(otherSid)
-                }
+            /*  determine all stored scope records  */
+            let sids = {}
+            let keys = await this.keyval.keys("sid:*,cid:*")
+            keys.forEach((key) => {
+                let [ , sid, cid ] = key.match(/^sid:(.+?),cid:(.+)$/)
+                if (sids[sid] === undefined)
+                    sids[sid] = []
+                sids[sid].push(cid)
             })
+
+            /*  iterate over all SIDs...  */
+            let outdatedSids = {}
+            let checked = {}
+            await Bluebird.each(Object.keys(sids), async (sid) => {
+                /*  check just once  */
+                if (outdatedSids[sid])
+                    return
+
+                /*  iterate over all (associated) CIDs...  */
+                await Bluebird.each(sids[sid], async (cid) => {
+                    /*  check just once  */
+                    if (outdatedSids[sid])
+                        return
+
+                    /*  fetch scope records value  */
+                    let value = await this.keyval.get(`sid:${sid},cid:${cid}`)
+                    if (value !== undefined && !checked[value]) {
+                        let recordsRead = this.__recordsUnserialize(value)
+                        if (recordsRead === null)
+                            await this.keyval.del(`sid:${sid},cid:${cid}`)
+                        else {
+                            /*  check whether writes outdate reads  */
+                            if (this.__scopeOutdated(recordsWrite, recordsRead))
+                                outdatedSids[sid] = true
+
+                            /*  remember that these scope records were already checked  */
+                            checked[value] = true
+                        }
+                    }
+                })
+            })
+            outdatedSids = Object.keys(outdatedSids)
 
             /*  externally publish ids of outdated queries to all instances
                 (comes in on all instances via __scopeOutdatedEvent below)  */
@@ -236,11 +262,8 @@ export default class gtsEvaluation {
         let sid = scope.sid
         let cid = scope.connection !== null ? scope.connection.cid : `${this.uuid}:none`
 
-        /*  scope records with no more corresponding subscriptions are deleted  */
+        /*  delete scope record  */
         await this.keyval.del(`sid:${sid},cid:${cid}`)
-        let keys = await this.keyval.keys(`sid:${sid},cid:*`)
-        if (keys.length === 0)
-            await this.keyval.del(`sid:${sid},rec`)
         this.emit("debug", `scope-store-delete sid=${sid} cid=${cid}`)
     }
 
@@ -250,24 +273,18 @@ export default class gtsEvaluation {
         await this.keyval.acquire()
         let info = { sids: {} }
         let keys = await this.keyval.keys("sid:*,cid:*")
-        keys.forEach((key) => {
+        await Bluebird.each(keys, async (key) => {
             let sid = key.replace(/^sid:(.+?),cid:.+?$/, "$1")
             let cid = key.replace(/^sid:.+?,cid:(.+?)$/, "$1")
             if (info.sids[sid] === undefined)
                 info.sids[sid] = { cids: [], records: [] }
             info.sids[sid].cids.push(cid)
-        })
-        keys = await this.keyval.keys("sid:*,rec")
-        let sids = keys.map((key) => key.replace(/^sid:(.+?),rec$/, "$1"))
-        await Bluebird.each(sids, async (sid) => {
-            let records = await this.keyval.get(`sid:${sid},rec`)
-            if (records !== undefined) {
-                records = this.__recordsUnserialize(records)
-                if (records === null)
-                    await this.keyval.del(`sid:${sid},rec`)
-                else
-                    info.sids[sid].records = info.sids[sid].records.concat(records)
-            }
+            let value = await this.keyval.get(key)
+            let records = this.__recordsUnserialize(value)
+            if (records === null)
+                await this.keyval.del(key)
+            else
+                info.sids[sid].records = info.sids[sid].records.concat(records)
         })
         await this.keyval.release()
 
@@ -290,10 +307,6 @@ export default class gtsEvaluation {
     async flush () {
         /*  flush all external storage information  */
         let keys = await this.keyval.keys("sid:*,cid:*")
-        await Bluebird.each(keys, async (key) => {
-            this.keyval.del(key)
-        })
-        keys = await this.keyval.keys("sid:*,rec")
         await Bluebird.each(keys, async (key) => {
             this.keyval.del(key)
         })
