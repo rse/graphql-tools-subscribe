@@ -104,8 +104,8 @@ export default class gtsEvaluation {
 
                 /*
                  *  CASE 1: modified entity (of arbitrary direct access)
-                 *  old/query:    read(*)->Item#{1}.{id,name}
-                 *  new/mutation: update/delete(*)->Item#{1}.{name}
+                 *  old/query:    [*#{*}.*->]read(*)->Item#{1}.{id,name}
+                 *  new/mutation: [*#{*}.*->]update/delete(*)->Item#{1}.{name}
                  */
                 if ((recNew.op === "update" || recNew.op === "delete")
                     &&         recOld.dstType === recNew.dstType
@@ -116,7 +116,7 @@ export default class gtsEvaluation {
                 /*
                  *  CASE 2: modified entity list (of relationship traversal)
                  *  old/query     Card#1.items->read(*)->Item#{2}.{id,name}
-                 *  new/mutation: update(*)->Card#{1}.{items}
+                 *  new/mutation: [*#{*}.*->]update(*)->Card#{1}.{items}
                  */
                 else if (recNew.op === "update"
                     &&           recOld.srcType !== null
@@ -127,11 +127,10 @@ export default class gtsEvaluation {
 
                 /*
                  *  CASE 3: modified entity list (of direct query)
-                 *  old/query     read(many/all)->Item#{*}.{id,name}
-                 *  new/mutation: create/update/delete(*)->Item#{*}.{name}
+                 *  old/query     [*#{*}.*->]read(many/all)->Item#{*}.{id,name}
+                 *  new/mutation: [*#{*}.*->]create/update/delete(*)->Item#{*}.{name}
                  */
                 else if ((recNew.op === "create" || recNew.op === "update" || recNew.op === "delete")
-                    &&         recOld.srcType === null
                     &&        (recOld.arity === "many" || recOld.arity === "all")
                     &&         recOld.dstType === recNew.dstType
                     && overlap(recOld.dstAttrs,   recNew.dstAttrs))
