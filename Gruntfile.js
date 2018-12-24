@@ -65,7 +65,7 @@ module.exports = function (grunt) {
                         } ]
                     ],
                     plugins: [
-                        [ "transform-runtime", {
+                        [ "@babel/plugin-transform-runtime", {
                             "corejs":      2,
                             "helpers":     true,
                             "regenerator": false
