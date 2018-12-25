@@ -22,8 +22,8 @@
         "eventemitter3":                             "3.1.0",
         "pure-uuid":                                 "1.5.6",
         "node-object-hash":                          "1.4.1",
-        "ipc-keyval":                                "1.1.0",
-        "ipc-pubsub":                                "1.1.0",
+        "ipc-keyval":                                "1.2.0",
+        "ipc-pubsub":                                "1.2.1",
         "ducky":                                     "2.7.0",
         "@babel/runtime-corejs2":                    "7.2.0"
     },
