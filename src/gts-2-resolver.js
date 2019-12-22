@@ -59,8 +59,8 @@ export default class gtsResolver {
                 throw new Error("subscribe: only allowed in GraphQL \"query\" operation")
 
             /*  determine parameters  */
-            let cid = obj.cid
-            let sid = ctx.scope.sid
+            const cid = obj.cid
+            const sid = ctx.scope.sid
 
             /*  enable subscription  */
             if (ctx.scope.state !== "unsubscribed")
@@ -93,12 +93,12 @@ export default class gtsResolver {
                 throw new Error("unsubscribe: only allowed in GraphQL \"mutation\" operation")
 
             /*  determine parameters  */
-            let cid = obj.cid
-            let sid = args.sid
+            const cid = obj.cid
+            const sid = args.sid
 
             /*  disable subscription  */
             let found = false
-            let conn = ctx.scope.connection
+            const conn = ctx.scope.connection
             conn.scopes.forEach((scope) => {
                 if (scope.sid !== sid)
                     return
@@ -133,11 +133,11 @@ export default class gtsResolver {
                 throw new Error("subscription: only allowed on WebSocket connection")
 
             /*  determine parameters  */
-            let cid = obj.cid
+            const cid = obj.cid
 
             /*  determine subscriptions  */
-            let sids = []
-            let conn = ctx.scope.connection
+            const sids = []
+            const conn = ctx.scope.connection
             conn.scopes.forEach((scope) => {
                 if (scope.state === "subscribed")
                     sids.push(scope.sid)
@@ -168,12 +168,12 @@ export default class gtsResolver {
                 throw new Error("pause: only allowed in GraphQL \"mutation\" operation")
 
             /*  determine parameters  */
-            let cid = obj.cid
-            let sid = args.sid
+            const cid = obj.cid
+            const sid = args.sid
 
             /*  pause subscription  */
             let found = false
-            let conn = ctx.scope.connection
+            const conn = ctx.scope.connection
             conn.scopes.forEach((scope) => {
                 if (scope.sid !== sid)
                     return
@@ -211,12 +211,12 @@ export default class gtsResolver {
                 throw new Error("resume: only allowed in GraphQL \"mutation\" operation")
 
             /*  determine parameters  */
-            let cid = obj.cid
-            let sid = args.sid
+            const cid = obj.cid
+            const sid = args.sid
 
             /*  resume subscription  */
             let found = false
-            let conn = ctx.scope.connection
+            const conn = ctx.scope.connection
             conn.scopes.forEach((scope) => {
                 if (scope.sid !== sid)
                     return

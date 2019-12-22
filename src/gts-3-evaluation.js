@@ -40,7 +40,7 @@ export default class gtsEvaluation {
 
     /*  unstringify a scope record  */
     __recordUnstringify (str) {
-        let m = str.match(/^(?:(.+?)#(.+?)\.(.+?)->)?(.+?)\((.+?)\)->(.+?)#\{(.*?)\}\.\{(.+?)\}$/)
+        const m = str.match(/^(?:(.+?)#(.+?)\.(.+?)->)?(.+?)\((.+?)\)->(.+?)#\{(.*?)\}\.\{(.+?)\}$/)
         if (m === null)
             throw new Error(`invalid record string "${str}" (failed to parse)`)
         return {
@@ -89,17 +89,17 @@ export default class gtsEvaluation {
                 return true
             if (list2.length === 1 && list2[0] === "*")
                 return true
-            let index = {}
+            const index = {}
             list1.forEach((x) => { index[x] = true })
-            let overlap = list2.filter((x) => index[x])
+            const overlap = list2.filter((x) => index[x])
             return overlap.length > 0
         }
 
         /*  iterate over all new and old records...  */
         for (let i = 0; i < recordsNew.length; i++) {
-            let recNew = recordsNew[i]
+            const recNew = recordsNew[i]
             for (let j = 0; j < recordsOld.length; j++) {
-                let recOld = recordsOld[j]
+                const recOld = recordsOld[j]
                 let outdated = false
 
                 /*
@@ -139,8 +139,8 @@ export default class gtsEvaluation {
                 /*  report outdate combination  */
                 if (outdated) {
                     this.emit("scope-outdated", { old: recordsOld[j], new: recordsNew[i] })
-                    let recOld = this.__recordStringify(recordsOld[j])
-                    let recNew = this.__recordStringify(recordsNew[i])
+                    const recOld = this.__recordStringify(recordsOld[j])
+                    const recNew = this.__recordStringify(recordsNew[i])
                     this.emit("debug", `scope-outdated old=${recOld} new=${recNew}`)
                     return true
                 }
@@ -154,11 +154,11 @@ export default class gtsEvaluation {
     /*  process a committed scope  */
     async __scopeProcess (scope) {
         /*  determine parameters  */
-        let sid = scope.sid
-        let cid = scope.connection !== null ? scope.connection.cid : `${this.uuid}:none`
+        const sid = scope.sid
+        const cid = scope.connection !== null ? scope.connection.cid : `${this.uuid}:none`
 
         /*  filter out write records in the scope  */
-        let recordsWrite = scope.records.filter((record) => {
+        const recordsWrite = scope.records.filter((record) => {
             return record.op.match(/^(?:create|update|delete)$/)
         })
 
@@ -166,8 +166,8 @@ export default class gtsEvaluation {
         if (recordsWrite.length === 0) {
             if (scope.state === "subscribed") {
                 /*  ...with subscriptions are remembered  */
-                let rec = await this.keyval.get(`sid:${sid},cid:${cid}`)
-                let recNew = this.__recordsSerialize(scope.records)
+                const rec = await this.keyval.get(`sid:${sid},cid:${cid}`)
+                const recNew = this.__recordsSerialize(scope.records)
                 if (rec === undefined || rec !== recNew) {
                     await this.keyval.put(`sid:${sid},cid:${cid}`, recNew)
                     this.emit("debug", `scope-store-update sid=${sid} cid=${cid}`)
@@ -183,10 +183,10 @@ export default class gtsEvaluation {
         /*  mutations (scopes with writes) might outdate queries (scopes with reads)  */
         else {
             /*  determine all stored scope records  */
-            let sids = {}
-            let keys = await this.keyval.keys("sid:*,cid:*")
+            const sids = {}
+            const keys = await this.keyval.keys("sid:*,cid:*")
             keys.forEach((key) => {
-                let [ , sid, cid ] = key.match(/^sid:(.+?),cid:(.+)$/)
+                const [ , sid, cid ] = key.match(/^sid:(.+?),cid:(.+)$/)
                 if (sids[sid] === undefined)
                     sids[sid] = []
                 sids[sid].push(cid)
@@ -194,7 +194,7 @@ export default class gtsEvaluation {
 
             /*  iterate over all SIDs...  */
             let outdatedSids = {}
-            let checked = {}
+            const checked = {}
             await Bluebird.each(Object.keys(sids), async (sid) => {
                 /*  check just once  */
                 if (outdatedSids[sid])
@@ -207,9 +207,9 @@ export default class gtsEvaluation {
                         return
 
                     /*  fetch scope records value  */
-                    let value = await this.keyval.get(`sid:${sid},cid:${cid}`)
+                    const value = await this.keyval.get(`sid:${sid},cid:${cid}`)
                     if (value !== undefined && !checked[value]) {
-                        let recordsRead = this.__recordsUnserialize(value)
+                        const recordsRead = this.__recordsUnserialize(value)
                         if (recordsRead === null)
                             await this.keyval.del(`sid:${sid},cid:${cid}`)
                         else {
@@ -258,8 +258,8 @@ export default class gtsEvaluation {
     /*  destroy a scope  */
     async __scopeDestroy (scope) {
         /*  determine parameters  */
-        let sid = scope.sid
-        let cid = scope.connection !== null ? scope.connection.cid : `${this.uuid}:none`
+        const sid = scope.sid
+        const cid = scope.connection !== null ? scope.connection.cid : `${this.uuid}:none`
 
         /*  delete scope record  */
         await this.keyval.del(`sid:${sid},cid:${cid}`)
@@ -270,16 +270,16 @@ export default class gtsEvaluation {
     async dump () {
         /*  determine information in store  */
         await this.keyval.acquire()
-        let info = { sids: {} }
-        let keys = await this.keyval.keys("sid:*,cid:*")
+        const info = { sids: {} }
+        const keys = await this.keyval.keys("sid:*,cid:*")
         await Bluebird.each(keys, async (key) => {
-            let sid = key.replace(/^sid:(.+?),cid:.+?$/, "$1")
-            let cid = key.replace(/^sid:.+?,cid:(.+?)$/, "$1")
+            const sid = key.replace(/^sid:(.+?),cid:.+?$/, "$1")
+            const cid = key.replace(/^sid:.+?,cid:(.+?)$/, "$1")
             if (info.sids[sid] === undefined)
                 info.sids[sid] = { cids: [], records: [] }
             info.sids[sid].cids.push(cid)
-            let value = await this.keyval.get(key)
-            let records = this.__recordsUnserialize(value)
+            const value = await this.keyval.get(key)
+            const records = this.__recordsUnserialize(value)
             if (records === null)
                 await this.keyval.del(key)
             else
@@ -295,7 +295,7 @@ export default class gtsEvaluation {
                 dump += `    Connection { cid: ${cid} }\n`
             })
             info.sids[sid].records.forEach((record) => {
-                let rec = this.__recordStringify(record)
+                const rec = this.__recordStringify(record)
                 dump += `    Record { rec: ${rec} }\n`
             })
         })
@@ -305,7 +305,7 @@ export default class gtsEvaluation {
     /*  flush all information  */
     async flush () {
         /*  flush all external storage information  */
-        let keys = await this.keyval.keys("sid:*,cid:*")
+        const keys = await this.keyval.keys("sid:*,cid:*")
         await Bluebird.each(keys, async (key) => {
             this.keyval.del(key)
         })

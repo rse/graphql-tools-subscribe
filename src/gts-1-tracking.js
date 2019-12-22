@@ -73,7 +73,7 @@ class Scope extends EventEmitter {
         }, record)
 
         /*  sanity check record  */
-        let errors = []
+        const errors = []
         if (!Ducky.validate(record, `{
             srcType:  (null|string),
             srcId:    (null|string),
@@ -89,7 +89,7 @@ class Scope extends EventEmitter {
         /*  consistency check record  */
         let isNotNull = 0
         let isNull    = 0
-        let attributes = [ "srcType", "srcId", "srcAttr" ]
+        const attributes = [ "srcType", "srcId", "srcAttr" ]
         attributes.forEach((attribute) => {
             if (record[attribute] === null)
                 isNull++
@@ -109,7 +109,7 @@ class Scope extends EventEmitter {
         this.records.push(record)
         this.api.emit("scope-record", { sid: this.sid, record: record })
         if (!this.silent) {
-            let rec = this.api.__recordStringify(record)
+            const rec = this.api.__recordStringify(record)
             this.api.emit("debug", `scope-record sid=${this.sid} record=${rec}`)
         }
     }
@@ -203,7 +203,7 @@ export default class gtsTracking {
 
     /*  record internal scope (without any connections)  */
     record (...args) {
-        let scope = new Scope(this, null, "<internal>", {}, true)
+        const scope = new Scope(this, null, "<internal>", {}, true)
         scope.record(...args)
         this.__scopeProcess(scope)
     }
